@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>보라카이 여행앱</title>
+<meta name="theme-color" content="#17806D">
+<meta name="description" content="보라카이 4박5일 여행 일정 · 지도 · 선셋 알람 · 예약 · 경비">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="보라카이">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap">
+<link rel="stylesheet" href="./app.css">
+</head>
+<body>
+<div id="app">
+  <main id="view"></main>
+  <section id="mapView" aria-label="지도">
+    <div id="mapbox" style="display:none"></div>
+    <div id="svgmap" aria-label="보라카이 지도"></div>
+    <div class="osmattr">지도 데이터 © OpenStreetMap 기여자</div>
+    <div id="mapTop"></div>
+    <div id="mapLocate"></div>
+    <div id="mapLegend"></div>
+    <div id="mapCard"></div>
+  </section>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="sheetBg"></div>
+  <div id="sheet" role="dialog" aria-modal="true"></div>
+  <div id="alarm" role="alertdialog" aria-live="assertive"></div>
+  <div id="toast" role="status"></div>
+</div>
+
+<script src="./data.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
