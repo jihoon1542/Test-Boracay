@@ -904,7 +904,8 @@ function refreshMap() {
   if (mapState !== 'ready') return;
   markers.forEach((m) => m.remove()); numMarkers.forEach((m) => m.remove()); markers = []; numMarkers = [];
   const f = S.ui.placeFilter, stops = routeStops(), ids = stops.map((p) => p.id);
-  S.places.filter((p) => p.lat && !ids.includes(p.id) && (f === 'all' || p.cat === f)).forEach((p) => markers.push(mbPin(p, 0, p.id === S.ui.selPlace)));
+  // 지도에는 그날 일정(번호 핀)만 크게 표시. 다른 저장 장소는 맛집·카페 버튼을 눌렀을 때나 고른 장소만 보여 줌
+  S.places.filter((p) => p.lat && !ids.includes(p.id) && ((f !== 'all' && p.cat === f) || p.id === S.ui.selPlace)).forEach((p) => markers.push(mbPin(p, 0, p.id === S.ui.selPlace)));
   stops.forEach((p, i) => numMarkers.push(mbPin(p, i + 1, p.id === S.ui.selPlace)));
   const track = (S.track && S.track[S.ui.day]) || [];
   map.getSource('track').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: track.length > 1 ? track : [] } });
