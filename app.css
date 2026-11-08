@@ -92,9 +92,13 @@ h2{margin:0;font-size:17px}
 .mthumb{width:64px;height:64px;border-radius:13px;border:0;background:#E6F3EF;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;padding:0}
 .mthumb img{width:100%;height:100%;object-fit:cover}
 .mbtn{height:36px;border:0;border-radius:11px;background:#17806D;color:#fff;font-weight:700;font-size:14px;padding:0 12px;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.hmap{position:relative;margin:-24px -18px 0;height:300px;overflow:hidden}
+.hmap{position:relative;margin:-24px -18px 0;height:clamp(380px,58vh,600px);overflow:hidden;touch-action:none}
+.hmapbg{position:absolute;inset:0;background:#DCEFEA;display:flex;align-items:center;justify-content:center}
+.hfail{border:0;background:#fff;border-radius:14px;padding:10px 14px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.1)}
+.hctl{position:absolute;right:14px;bottom:44px;display:flex;gap:8px;align-items:center}
+.hfab{width:40px;height:40px;border-radius:50%;border:0;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .hhead{position:absolute;left:14px;right:14px;top:14px;background:#fff;border-radius:20px;padding:10px 6px 10px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,.08)}
-.hbig{position:absolute;right:14px;bottom:44px;height:40px;padding:0 14px;border-radius:999px;border:0;background:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.hbig{height:40px;padding:0 14px;border-radius:999px;border:0;background:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .hsheet{position:relative;margin:-30px -18px 0;background:#fff;border-radius:26px 26px 0 0;padding:18px 18px 8px;display:flex;flex-direction:column;gap:14px;min-height:calc(100% - 250px)}
 .hsteps{position:relative;display:flex;justify-content:space-between;padding:0 4px}
 .hline{position:absolute;left:34px;right:34px;top:13px;height:3px;background:#E3E6E3;border-radius:2px}
@@ -131,7 +135,8 @@ h2{margin:0;font-size:17px}
 .empty{padding:28px 0;text-align:center;color:var(--muted);font-size:14px}
 pre.memo{white-space:pre-wrap;word-break:break-word;font-family:inherit;font-size:13px;margin:0;background:#fff;border-radius:12px;padding:12px}
 
-.hmap .mapboxgl-ctrl-bottom-left,.hmap .mapboxgl-ctrl-bottom-right{bottom:30px}
+.hmap .mapboxgl-ctrl-bottom-left,.hmap .mapboxgl-ctrl-bottom-right{bottom:32px}
+.hmap .mapboxgl-ctrl-bottom-right{right:auto;left:0}
 .hmap .mapboxgl-ctrl-attrib.mapboxgl-compact{margin:0 8px 6px 0}
 .hosm{position:absolute;right:8px;bottom:34px;font-size:9px;color:#56676A;background:rgba(255,255,255,.75);padding:1px 5px;border-radius:4px}
 

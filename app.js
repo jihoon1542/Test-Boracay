@@ -265,7 +265,7 @@ function viewHome() {
   }).join('');
   return `
   <div class="hmap">
-    ${miniMap(390, 300, stops)}
+    <div class="hmapbg">${homeMbState === 'failed' ? `<button class="hfail" data-act="homeRetry">${svg('map', 18, G)}지도를 불러오지 못했어요 · 다시 시도</button>` : ''}</div>
     <div class="hhead">
       <div style="min-width:0"><button data-act="trips" style="border:0;background:none;padding:0;font-size:24px;font-weight:700;letter-spacing:-.03em;line-height:1.2;text-align:left;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${esc(S.trip.name)}</button>
         <div style="font-size:14px;font-weight:700;color:${G};margin-top:2px">${before ? `여행 D-${dleft}` : `여행 ${di + 1}일차`} · ${fmtDate(day)}</div></div>
@@ -274,8 +274,8 @@ function viewHome() {
         <button class="icon" data-act="settings" aria-label="설정">${svg('gear', 22, '#5B6B6E')}</button>
       </div>
     </div>
-    <span class="hosm">© OpenStreetMap</span>
-    <button class="hbig" data-act="tab" data-tab="map">${svg('map', 16, G)}지도 크게 보기</button>
+    <div class="hctl"><button class="hfab" data-act="homeFit" aria-label="오늘 동선 보기">${svg('crosshair', 18, '#1C2B2E')}</button>
+      <button class="hbig" data-act="tab" data-tab="map">${svg('map', 16, G)}지도 탭</button></div>
   </div>
   <div class="hsheet">
     <div class="hsteps"><div class="hline"><i style="width:${(prog * 100).toFixed(0)}%"></i></div>${steps}</div>
@@ -2003,7 +2003,7 @@ function mountHomeMap() {
   if (!homeMbEl) {
     homeMbEl = document.createElement('div');
     homeMbEl.style.cssText = 'position:absolute;inset:0;opacity:0;transition:opacity .35s';
-    homeMbEl.setAttribute('aria-hidden', 'true');
+    homeMbEl.setAttribute('aria-label', '오늘 동선 지도');
   }
   host.insertBefore(homeMbEl, host.children[1] || null); // 그림 지도 위, 헤더 카드 아래
   if (homeMbState === 'ready') { homeMap.resize(); updateHomeMap(); const o = host.querySelector('.hosm'); if (o) o.style.display = 'none'; return; }
@@ -2012,7 +2012,7 @@ function mountHomeMap() {
   loadMapboxLib().then(() => {
     mapboxgl.accessToken = MAPBOX_TOKEN;
     let m;
-    try { m = new mapboxgl.Map({ container: homeMbEl, style: MAPBOX_STYLE, center: [121.9235, 11.9650], zoom: 14, interactive: false, attributionControl: false }); m.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right'); }
+    try { m = new mapboxgl.Map({ container: homeMbEl, style: MAPBOX_STYLE, center: [121.9235, 11.9650], zoom: 14, minZoom: 12.5, maxZoom: 19, maxBounds: BORACAY.bounds, dragRotate: false, pitchWithRotate: false, touchPitch: false, attributionControl: false }); m.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right'); try { m.touchZoomRotate.disableRotation(); } catch (e) {} }
     catch (e) { dropHomeMap(); homeMbState = 'failed'; return; }
     homeMap = m;
     let loaded = false;
@@ -2026,6 +2026,19 @@ function mountHomeMap() {
       m.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': GL, 'line-width': 4.5 } });
       PALMS.forEach((ll) => { const el = document.createElement('div'); el.innerHTML = `<svg width="26" height="23" viewBox="-15 -23 30 26" aria-hidden="true">${PALM}</svg>`; new mapboxgl.Marker({ element: el, anchor: 'bottom' }).setLngLat(ll).addTo(m); });
       UMBS.forEach((ll) => { const el = document.createElement('div'); el.innerHTML = `<svg width="18" height="20" viewBox="-10 -21 20 22" aria-hidden="true">${UMB}</svg>`; new mapboxgl.Marker({ element: el, anchor: 'bottom' }).setLngLat(ll).addTo(m); });
+      try {
+        m.setConfigProperty('basemap', 'densityPointOfInterestLabels', 4);
+        m.addInteraction('home-poi', { type: 'click', target: { featuresetId: 'poi', importId: 'basemap' }, handler: (e) => {
+          const f = e.feature, c = f.geometry && f.geometry.coordinates; if (!c) return true;
+          const poi = { name: (f.properties && f.properties.name) || '', lng: c[0], lat: c[1], cat: poiCat(f.properties.class, f.properties.maki) };
+          const cam = { center: m.getCenter(), zoom: Math.max(m.getZoom(), 16) };
+          S.ui.tab = 'map'; save(); render();
+          whenMapReady(() => { map.jumpTo(cam); openPoi(poi); });
+          return true;
+        } });
+        m.addInteraction('home-poi-in', { type: 'mouseenter', target: { featuresetId: 'poi', importId: 'basemap' }, handler: () => { m.getCanvas().style.cursor = 'pointer'; } });
+        m.addInteraction('home-poi-out', { type: 'mouseleave', target: { featuresetId: 'poi', importId: 'basemap' }, handler: () => { m.getCanvas().style.cursor = ''; } });
+      } catch (e) {}
       updateHomeMap();
       m.once('idle', () => { if (homeMbEl) homeMbEl.style.opacity = '1'; const o = document.querySelector('.hosm'); if (o) o.style.display = 'none'; });
     });
@@ -2041,6 +2054,7 @@ function updateHomeMap() {
   stops.forEach((p, i) => {
     const el = document.createElement('div');
     el.innerHTML = `<svg width="28" height="35" viewBox="-14 -34 28 36" aria-hidden="true"><path d="M0 0 C-5 -7 -13 -11 -13 -20 A13 13 0 1 1 13 -20 C13 -11 5 -7 0 0 Z" fill="${i === 0 ? G : GL}" stroke="#fff" stroke-width="2.5"/><text y="-15" text-anchor="middle" style="font:700 13px 'Space Grotesk',sans-serif;fill:#fff">${i + 1}</text></svg>`;
+    el.style.cursor = 'pointer'; el.addEventListener('click', (ev) => { ev.stopPropagation(); placeSheet(p); });
     homeMarkers.push(new mapboxgl.Marker({ element: el, anchor: 'bottom' }).setLngLat([p.lng, p.lat]).addTo(homeMap));
   });
   if (userPos && insideBoracay(userPos)) {
@@ -2073,6 +2087,8 @@ document.addEventListener('click', (e) => {
   switch (a) {
     case 'tab': closeSheet(); if (POI) closePoi(true); S.ui.tab = b.dataset.tab; rerender(); break;
     case 'poiClose': closePoi(); break;
+    case 'homeFit': homeFitSig = ''; updateHomeMap(); break;
+    case 'homeRetry': dropHomeMap(); homeMbState = 'idle'; rerender(); break;
     case 'poiFull': poiFullSheet(); break;
     case 'poiOther': poiOtherSheet(); break;
     case 'poiNav': if (POI) navTo({ id: 'poi', name: POI.name || CATS[POI.cat], lat: POI.lat, lng: POI.lng }); break;
