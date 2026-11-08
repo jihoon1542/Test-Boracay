@@ -5,7 +5,9 @@ const MAPBOX_STYLE = 'mapbox://styles/oddeysehun/cmw378pfz009g01q2854qhzjt';
 const GOOGLE_KEY = 'AIzaSyBbyVVSulhPZ16fW5SS8BmfTPLROCbiOOw';
 const BORACAY = { lat: 11.968, lng: 121.925, bounds: [[121.895, 11.925], [121.965, 12.015]] };
 let TZ = 'Asia/Manila';
-const STORE_KEY = 'boracay-app-v1';
+const STORE_KEY = 'boracay-test-v1';
+// 테스트 앱은 원래 앱과 같은 주소(github.io)라 저장소를 따로 씀. 처음 열 때만 원래 앱 데이터를 복사해 옴
+try { if (!localStorage.getItem(STORE_KEY) && localStorage.getItem('boracay-app-v1')) localStorage.setItem(STORE_KEY, localStorage.getItem('boracay-app-v1')); } catch (e) {}
 
 /* ========= 아이콘 ========= */
 const I = {

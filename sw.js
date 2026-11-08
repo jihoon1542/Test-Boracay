@@ -1,5 +1,5 @@
 // 보라카이 여행앱 서비스 워커: 앱 화면은 오프라인에서도 열리게, 지도·날씨·환율 같은 실시간 데이터는 항상 인터넷에서
-const VERSION = 'boracay-test-1';
+const VERSION = 'boracay-test-2';
 const SHELL = ['./', './index.html', './app.css', './app.js', './data.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 // 글꼴과 지도 라이브러리는 한 번 받으면 저장해 두고 씀 (Mapbox 지도 조각·API 응답은 저장하지 않음)
@@ -10,7 +10,7 @@ self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k.startsWith('boracay-test-')).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', (e) => {
   const req = e.request;
