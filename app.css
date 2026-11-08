@@ -95,7 +95,7 @@ h2{margin:0;font-size:17px}
 .hmap{position:relative;margin:-24px -18px 0;height:clamp(380px,58vh,600px);overflow:hidden;touch-action:none}
 .hmapbg{position:absolute;inset:0;background:#DCEFEA;display:flex;align-items:center;justify-content:center}
 .hfail{border:0;background:#fff;border-radius:14px;padding:10px 14px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.1)}
-.hctl{position:absolute;right:14px;bottom:44px;display:flex;gap:8px;align-items:center}
+.hctl{position:absolute;left:14px;bottom:44px;display:flex;gap:8px;align-items:center}
 .hfab{width:40px;height:40px;border-radius:50%;border:0;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .hhead{position:absolute;left:14px;right:14px;top:14px;background:#fff;border-radius:20px;padding:10px 6px 10px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,.08)}
 .hbig{height:40px;padding:0 14px;border-radius:999px;border:0;background:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
@@ -136,7 +136,6 @@ h2{margin:0;font-size:17px}
 pre.memo{white-space:pre-wrap;word-break:break-word;font-family:inherit;font-size:13px;margin:0;background:#fff;border-radius:12px;padding:12px}
 
 .hmap .mapboxgl-ctrl-bottom-left,.hmap .mapboxgl-ctrl-bottom-right{bottom:32px}
-.hmap .mapboxgl-ctrl-bottom-right{right:auto;left:0}
 .hmap .mapboxgl-ctrl-attrib.mapboxgl-compact{margin:0 8px 6px 0}
 .hosm{position:absolute;right:8px;bottom:34px;font-size:9px;color:#56676A;background:rgba(255,255,255,.75);padding:1px 5px;border-radius:4px}
 
@@ -174,3 +173,16 @@ gmp-place-details,gmp-place-search{width:100%;--gmp-mat-font-family:'Noto Sans K
 .rstrip::-webkit-scrollbar{display:none}
 .rchip{flex-shrink:0;border:0;background:#fff;height:38px;border-radius:19px;padding:0 14px 0 6px;display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.12);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rchip i{font-style:normal;width:26px;height:26px;border-radius:50%;background:#2DAA8A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 13px 'Space Grotesk',sans-serif;flex-shrink:0}
+
+/* 홈 지도 전체 화면 */
+.hmap{transition:height .3s ease}
+.hsheet{transition:transform .2s ease}
+.hgrab{width:40px;height:5px;border-radius:3px;background:#D6DCD9;margin:-8px auto -4px;flex-shrink:0}
+.hpeek{display:none;border:0;background:none;height:40px;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:#3E5457;width:100%;min-width:0}
+.hpeek svg{transform:rotate(180deg);flex-shrink:0}
+.hpeek span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#view.hfull{overflow:hidden}
+#view.hfull .hmap{height:calc(100% + 6px)}
+#view.hfull .hsheet{min-height:0;height:76px;overflow:hidden;gap:2px;padding-top:14px}
+#view.hfull .hsheet>*:not(.hgrab):not(.hpeek){display:none}
+#view.hfull .hpeek{display:flex}

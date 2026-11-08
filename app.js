@@ -203,6 +203,7 @@ function render() {
   if (S.ui.tab === 'home' || S.ui.tab === 'sunset') maybeWeather();
   $('#view').innerHTML = ({ home: viewHome, todo: viewTodo, sunset: viewSunset, tickets: viewTickets, money: viewMoney, more: viewMore, places: viewPlaces, check: viewCheck, journal: viewJournal }[S.ui.tab] || viewHome)();
   if (S.ui.tab === 'money') updateFx();
+  $('#view').classList.toggle('hfull', S.ui.tab === 'home' && homeFull);
   if (S.ui.tab === 'home') mountHomeMap();
   hydrateImages();
 }
@@ -278,6 +279,8 @@ function viewHome() {
       <button class="hbig" data-act="tab" data-tab="map">${svg('map', 16, G)}지도 탭</button></div>
   </div>
   <div class="hsheet">
+    <div class="hgrab" aria-hidden="true"></div>
+    <button class="hpeek" data-act="homeExpand">${svg('chevd', 16, '#5B6B6E')}<span>위로 올려 일정 보기${next ? ' · 다음: ' + esc(np ? np.name : next.title) : ''}</span></button>
     <div class="hsteps"><div class="hline"><i style="width:${(prog * 100).toFixed(0)}%"></i></div>${steps}</div>
     ${next ? `<div class="hnext">
       <span class="hnext-ic">${svg(np ? (CAT_ICON[np.cat] || 'pin') : 'list', 26, '#fff')}</span>
@@ -700,13 +703,10 @@ function renderMapCats() {
   $('#mapCats').innerHTML = MAP_CATS.map(([k, label, ic]) =>
     `<button class="mcat ${f === k ? 'on' : ''}" data-act="pfilter" data-f="${f === k ? 'all' : k}" aria-pressed="${f === k}">${svg(ic, 16, f === k ? '#fff' : G)}${label}</button>`).join('');
 }
-const routeOn = () => S.ui.showRoute !== false;
+const routeOn = () => false; // 지도 탭의 동선 표시는 없앰 (홈 지도에서만 오늘 동선을 보여 줌)
 const trackOn = () => S.ui.showTrack !== false;
 function renderMapLegend() {
-  const n = routeStops().length, isToday = S.ui.day === todayStr();
-  $('#mapLegend').innerHTML = routeOn()
-    ? `<div class="rpill"><button data-act="routeSheet" class="rpill-main" aria-label="동선 날짜 고르기"><span class="rline"></span><b>${isToday ? '오늘' : 'D' + dayIndex(S.ui.day)} 동선</b><span class="muted">${n}곳</span>${svg('chevd', 14, '#5B6B6E')}</button><button data-act="routeOff" class="rpill-x" aria-label="동선 숨기기">${svg('close', 14, '#5B6B6E')}</button></div>`
-    : `<div class="rpill"><button data-act="routeSheet" class="rpill-main" aria-label="동선 보기"><span class="rline" style="opacity:.4"></span><b>동선 보기</b></button></div>`;
+  $('#mapLegend').innerHTML = '';
   $('#mapLocate').innerHTML = `<button data-act="locate" aria-label="내 위치로">${svg('crosshair', 22, '#1C2B2E')}</button>`;
 }
 function routeSheet() {
@@ -2056,6 +2056,34 @@ function loadMapboxLib() {
   });
   return mbLibPromise;
 }
+// 홈: 아래 카드를 끌어내리면 지도 전체 화면, 다시 올리면 원래대로
+let homeFull = false;
+function setHomeFull(on) {
+  homeFull = on; const v = $('#view');
+  v.scrollTop = 0; v.classList.toggle('hfull', on);
+  [60, 180, 340].forEach((t) => setTimeout(() => { if (homeMap) homeMap.resize(); }, t));
+}
+(function bindHomeSwipe() {
+  const v = $('#view'); let y0 = null, st0 = 0, sheet = null, dy = 0;
+  v.addEventListener('touchstart', (e) => {
+    if (S.ui.tab !== 'home' || e.touches.length !== 1) { y0 = null; return; }
+    sheet = e.target.closest('.hsheet'); if (!sheet) { y0 = null; return; }
+    y0 = e.touches[0].clientY; st0 = v.scrollTop; dy = 0;
+  }, { passive: true });
+  v.addEventListener('touchmove', (e) => {
+    if (y0 === null) return;
+    dy = e.touches[0].clientY - y0;
+    if (!homeFull && st0 <= 0 && v.scrollTop <= 0 && dy > 0) sheet.style.transform = `translateY(${Math.min(dy, 260) * 0.7}px)`;
+    else if (homeFull && dy < 0) sheet.style.transform = `translateY(${Math.max(dy, -120) * 0.5}px)`;
+  }, { passive: true });
+  v.addEventListener('touchend', () => {
+    if (y0 === null) return;
+    if (sheet) sheet.style.transform = '';
+    if (!homeFull && st0 <= 0 && dy > 70) setHomeFull(true);
+    else if (homeFull && dy < -30) setHomeFull(false);
+    y0 = null;
+  });
+})();
 let homeMap = null, homeMbEl = null, homeMbState = 'idle', homeMbKey = '', homeMarkers = [], homeFitSig = '';
 function dropHomeMap() {
   if (homeMap) { try { homeMap.remove(); } catch (e) {} }
@@ -2081,7 +2109,7 @@ function mountHomeMap() {
   loadMapboxLib().then(() => {
     mapboxgl.accessToken = MAPBOX_TOKEN;
     let m;
-    try { m = new mapboxgl.Map({ container: homeMbEl, style: MAPBOX_STYLE, center: [121.9235, 11.9650], zoom: 14, minZoom: 12.5, maxZoom: 19, maxBounds: BORACAY.bounds, dragRotate: false, pitchWithRotate: false, touchPitch: false, attributionControl: false }); m.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right'); try { m.touchZoomRotate.disableRotation(); } catch (e) {} }
+    try { m = new mapboxgl.Map({ container: homeMbEl, style: MAPBOX_STYLE, center: [121.9235, 11.9650], zoom: 14, minZoom: 12.5, maxZoom: 19, maxBounds: BORACAY.bounds, dragRotate: false, pitchWithRotate: false, touchPitch: false, attributionControl: false, logoPosition: 'bottom-right' }); m.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right'); try { m.touchZoomRotate.disableRotation(); } catch (e) {} }
     catch (e) { dropHomeMap(); homeMbState = 'failed'; return; }
     homeMap = m;
     let loaded = false;
@@ -2157,6 +2185,7 @@ document.addEventListener('click', (e) => {
     case 'tab': closeSheet(); if (POI) closePoi(true); S.ui.tab = b.dataset.tab; rerender(); break;
     case 'poiClose': closePoi(); break;
     case 'homeFit': homeFitSig = ''; updateHomeMap(); break;
+    case 'homeExpand': setHomeFull(false); break;
     case 'homeRetry': dropHomeMap(); homeMbState = 'idle'; rerender(); break;
     case 'poiFull': poiFullSheet(); break;
     case 'poiOther': poiOtherSheet(); break;
