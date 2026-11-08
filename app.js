@@ -728,6 +728,21 @@ function renderMapCardInner() {
   const p = placeById(S.ui.selPlace) || routeStops()[0];
   if (!p) { card.innerHTML = `<div class="mhint">지도를 길게 누르면 장소를 추가할 수 있어요</div>`; return; }
   const inPlan = routeStops().some((x) => x.id === p.id);
+  if (GOOGLE_KEY && !gAuthFail && p.lat) {
+    const g = placeG(p);
+    card.innerHTML = `<div class="mcard" style="flex-direction:column;align-items:stretch;gap:8px">
+      <button data-act="openPlace" data-id="${p.id}" class="between" style="border:0;background:none;padding:0;text-align:left;width:100%;gap:8px">
+        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b style="font-size:16px">${esc(p.name)}</b><span class="muted" style="font-size:12px"> · ${esc(p.area || CATS[p.cat] || '')}</span></span>
+        ${svg('chev', 18, '#1C2B2E')}</button>
+      ${g.state === 'ok' ? '<div id="ownGSlot" class="poig"></div>' : `<div class="poig-msg">${g.state === 'loading' ? 'Google 정보 찾는 중…' : g.state === 'none' ? 'Google에서 이 장소를 찾지 못했어요' : 'Google 정보를 불러오지 못했어요'}</div>`}
+      <div class="between" style="gap:6px">
+        <span class="row" style="gap:12px"><button data-act="openPlace" data-id="${p.id}" class="poilink">메뉴·가격 ›</button>${g.state === 'ok' ? `<button data-act="gFull" data-id="${p.id}" class="poilink">리뷰·사진 ›</button>` : ''}<button data-act="gOther" data-id="${p.id}" class="poilink" style="color:#5B6B6E">${g.state === 'ok' ? '다른 곳?' : '근처 찾기'}</button></span>
+        <span class="row" style="gap:6px"><button data-act="navTo" data-id="${p.id}" aria-label="길찾기" class="mbtn" style="background:#EEF4FD;color:#1A73E8;padding:0 12px">${svg('nav', 16, '#1A73E8')}</button>
+        <button data-act="placeToTodo" data-id="${p.id}" class="mbtn">${svg('plus', 16, '#fff', 2.6)}${inPlan ? '또 추가' : '일정에 추가'}</button></span>
+      </div></div>`;
+    const slot = $('#ownGSlot'); if (slot && g.el) slot.appendChild(g.el);
+    return;
+  }
   card.innerHTML = `<div class="mcard">
     <button data-act="openPlace" data-id="${p.id}" class="mthumb" aria-label="${esc(p.name)} 사진">${p.photo ? `<img data-img="${p.photo}" alt="">` : svg(CAT_ICON[p.cat] || 'pin', 26, G, 1.8)}</button>
     <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
@@ -864,7 +879,6 @@ function addDecorMarkers() {
   const mk = (html, ll, anchor) => { const el = document.createElement('div'); el.style.pointerEvents = 'none'; el.innerHTML = html; decorMarkers.push(new mapboxgl.Marker({ element: el, anchor: anchor || 'bottom' }).setLngLat(ll).addTo(map)); };
   PALMS.forEach((ll) => mk(`<svg width="30" height="26" viewBox="-15 -23 30 26" aria-hidden="true">${PALM}</svg>`, ll));
   UMBS.forEach((ll) => mk(`<svg width="20" height="22" viewBox="-10 -21 20 22" aria-hidden="true">${UMB}</svg>`, ll));
-  mk(`<div style="font:italic 700 20px Georgia,'Noto Sans KR',serif;color:#1C3D44;line-height:1.1;text-align:center;text-shadow:0 0 4px #F3F1EA">White<br>Beach</div>`, [121.9185, 11.9590], 'center');
 }
 function mbPin(p, n, on) {
   const el = document.createElement('button'); el.dataset.mb = '1'; el.setAttribute('aria-label', (n ? n + '번 ' : '') + p.name);
@@ -1009,8 +1023,8 @@ function gFullSheet(id, title) {
   }).catch(() => { const slot = $('#gFullSlot'); if (slot) slot.innerHTML = '<div class="poig-msg">Google 정보를 불러오지 못했어요</div>'; });
 }
 function poiFullSheet() { if (POI && POI.gid) gFullSheet(POI.gid, POI.gname || POI.name); }
-function poiOtherSheet() {
-  const p = POI; if (!p) return;
+function poiOtherSheet(own) {
+  const p = own || POI; if (!p) return;
   openSheet(`<h2 style="font-size:20px">근처 ${CATS[p.cat] && p.cat !== 'etc' ? CATS[p.cat] : '가게'}</h2><p class="small muted" style="margin:4px 0 10px">맞는 곳을 누르면 그 가게로 바뀌어요</p><div id="gOtherSlot" class="gfull"><div class="poig-msg">찾는 중…</div></div>`);
   loadGoogle().then(() => {
     const slot = $('#gOtherSlot'); if (!slot) return;
@@ -1023,7 +1037,9 @@ function poiOtherSheet() {
     req.rankPreference = 'DISTANCE';
     el.prepend(req);
     el.addEventListener('gmp-select', (ev) => {
-      const pl = ev.place; if (!pl || POI !== p) return;
+      const pl = ev.place; if (!pl) return;
+      if (own) { own.gid = pl.id; delete GOWN[own.id]; save(); closeSheet(); renderMapCard(); return; }
+      if (POI !== p) return;
       if (pl.location) { p.lat = pl.location.lat(); p.lng = pl.location.lng(); poiMarker && poiMarker.setLngLat([p.lng, p.lat]); }
       p.guess = false; try { p.gname = pl.displayName || p.gname; } catch (e) {}
       setPoiGid(p, pl.id); closeSheet(); renderMapCard();
@@ -1031,6 +1047,33 @@ function poiOtherSheet() {
     el.addEventListener('gmp-error', () => { slot.innerHTML = '<div class="poig-msg">근처 가게를 불러오지 못했어요</div>'; });
     slot.replaceChildren(el);
   }).catch(() => { const slot = $('#gOtherSlot'); if (slot) slot.innerHTML = '<div class="poig-msg">Google 정보를 불러오지 못했어요</div>'; });
+}
+// 내 장소(일정에 넣은 곳)도 Google 장소와 연결: 이름+위치로 찾아서 place ID만 저장
+const GOWN = {};
+const KO_EN = [['해변', 'Beach'], ['전망대', 'Viewpoint'], ['리조트', 'Resort'], ['호텔', 'Hotel'], ['선착장', 'Port'], ['식당', 'Restaurant']];
+function gQuery(p) { let q = p.gq || p.name || ''; KO_EN.forEach(([k, e]) => { q = q.split(k).join(e); }); return /boracay/i.test(q) ? q : q + ' Boracay'; }
+function placeG(p) {
+  let g = GOWN[p.id];
+  if (g && g.gid === (p.gid || g.gid)) return g;
+  g = GOWN[p.id] = { state: 'loading', gid: p.gid || null, el: null };
+  const ready = (id) => {
+    g.gid = id; g.state = 'ok'; g.el = gCompact(id);
+    g.el.addEventListener('gmp-error', () => { g.state = 'error'; if (S.ui.selPlace === p.id) renderMapCard(); });
+  };
+  if (p.gid) { loadGoogle().then(() => { ready(p.gid); if (S.ui.selPlace === p.id || (!S.ui.selPlace)) renderMapCard(); }).catch(() => { g.state = 'error'; renderMapCard(); }); return g; }
+  loadGoogle().then(async ({ Place }) => {
+    const d = p.cat === 'beach' || p.cat === 'act' ? 0.004 : 0.0025;
+    const r = await Place.searchByText({ textQuery: gQuery(p), fields: ['id'], maxResultCount: 3, language: 'ko', locationRestriction: { north: p.lat + d, south: p.lat - d, east: p.lng + d, west: p.lng - d } });
+    if (r.places && r.places.length) { p.gid = r.places[0].id; save(); ready(p.gid); } else g.state = 'none';
+  }).catch((e) => { console.warn('Google', e); g.state = 'error'; }).then(() => { if (S.ui.tab === 'map') renderMapCard(); });
+  return g;
+}
+function ensureGid(p) {
+  if (p.gid) return Promise.resolve(p.gid);
+  return new Promise((res) => {
+    placeG(p);
+    const t0 = Date.now(), iv = setInterval(() => { const g = GOWN[p.id]; if (p.gid || !g || g.state !== 'loading' || Date.now() - t0 > 8000) { clearInterval(iv); res(p.gid || null); } }, 200);
+  });
 }
 function poiAdd() {
   const p = POI; if (!p) return;
@@ -1394,7 +1437,7 @@ function placeSheet(p) {
     ${p.signature || p.priceRange || p.memo ? `<div class="card stack" style="gap:4px;margin-bottom:12px">
       ${p.signature ? `<span><b>대표 메뉴</b> · ${esc(p.signature)}</span>` : ''}${p.priceRange ? `<span><b>가격대</b> · ${esc(p.priceRange)}</span>` : ''}
       ${p.memo ? `<span class="small muted" style="white-space:pre-wrap">${esc(p.memo)}</span>` : ''}</div>` : ''}
-    ${p.gid ? `<div class="stack" style="gap:6px;margin-bottom:12px"><div class="between"><h2 style="font-size:15px">Google 정보</h2><button class="poilink" data-act="gFull" data-id="${p.id}">리뷰·사진 ›</button></div><div class="card" id="placeGSlot" style="padding:8px"><div class="poig-msg">불러오는 중…</div></div></div>` : ''}
+    ${GOOGLE_KEY && p.lat ? `<div class="stack" style="gap:6px;margin-bottom:12px"><div class="between"><h2 style="font-size:15px">Google 정보</h2><button class="poilink" data-act="gFull" data-id="${p.id}">리뷰·사진 ›</button></div><div class="card" id="placeGSlot" style="padding:8px"><div class="poig-msg">불러오는 중…</div></div></div>` : ''}
     <div class="stack" style="gap:8px">
       <h2 style="font-size:15px">메뉴 · 가격</h2>
       <div class="card" style="padding:0 14px">
@@ -1418,7 +1461,7 @@ function placeSheet(p) {
       <button class="btn" data-act="placeToTodo" data-id="${p.id}">${svg('plus', 18, '#fff', 2.5)} 시간 정해서 추가</button>
     </div>`);
   hydrateImages();
-  if (p.gid) loadGoogle().then(() => { const slot = $('#placeGSlot'); if (slot) slot.replaceChildren(gCompact(p.gid)); }).catch(() => { const slot = $('#placeGSlot'); if (slot) slot.innerHTML = '<div class="poig-msg">Google 정보를 불러오지 못했어요</div>'; });
+  if (GOOGLE_KEY && p.lat) ensureGid(p).then((id) => { const slot = $('#placeGSlot'); if (!slot) return; if (id) slot.replaceChildren(gCompact(id)); else slot.innerHTML = '<div class="poig-msg">Google에서 이 장소를 찾지 못했어요</div>'; }).catch(() => { const slot = $('#placeGSlot'); if (slot) slot.innerHTML = '<div class="poig-msg">Google 정보를 불러오지 못했어요</div>'; });
 }
 function addPlaceForm(lngLat) { placeForm(null, lngLat); }
 
@@ -2093,7 +2136,8 @@ document.addEventListener('click', (e) => {
     case 'poiOther': poiOtherSheet(); break;
     case 'poiNav': if (POI) navTo({ id: 'poi', name: POI.name || CATS[POI.cat], lat: POI.lat, lng: POI.lng }); break;
     case 'poiAdd': poiAdd(); break;
-    case 'gFull': { const p = placeById(id); if (p && p.gid) gFullSheet(p.gid, p.name); break; }
+    case 'gFull': { const p = placeById(id); if (p) ensureGid(p).then((gid) => gid ? gFullSheet(gid, p.name) : toast('Google에서 이 장소를 찾지 못했어요')); break; }
+    case 'gOther': { const p = placeById(id); if (p) poiOtherSheet(p); break; }
     case 'homeDay': S.ui.day = b.dataset.day; S.ui.tab = 'todo'; rerender(); break;
     case 'pickDay': S.ui.day = b.dataset.day; rerender(); break;
     case 'mapDay': S.ui.day = b.dataset.day; save(); renderMap(); refreshMap(); break;
