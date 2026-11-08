@@ -174,15 +174,33 @@ gmp-place-details,gmp-place-search{width:100%;--gmp-mat-font-family:'Noto Sans K
 .rchip{flex-shrink:0;border:0;background:#fff;height:38px;border-radius:19px;padding:0 14px 0 6px;display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.12);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rchip i{font-style:normal;width:26px;height:26px;border-radius:50%;background:#2DAA8A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 13px 'Space Grotesk',sans-serif;flex-shrink:0}
 
-/* 홈 지도 전체 화면 */
-.hmap{transition:height .3s ease}
-.hsheet{transition:transform .2s ease}
-.hgrab{width:40px;height:5px;border-radius:3px;background:#D6DCD9;margin:-8px auto -4px;flex-shrink:0}
-.hpeek{display:none;border:0;background:none;height:40px;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:#3E5457;width:100%;min-width:0}
+/* 홈: 지도 전체 + 위로 덮는 일정 카드 */
+html,body{overscroll-behavior:none}
+#view{overscroll-behavior:contain}
+#view.vhome{padding:0;overflow:hidden}
+#view.vhome .hmap{position:absolute;inset:0;margin:0;height:auto}
+.hdock{position:absolute;left:0;right:0;bottom:0;top:clamp(300px,52%,560px);z-index:3;transition:transform .32s cubic-bezier(.2,.8,.2,1);will-change:transform}
+.hdock.down{transform:translateY(calc(100% - 76px))}
+.hdock .hctl{position:absolute;left:14px;bottom:auto;top:-54px}
+.hdock .hsheet{position:absolute;inset:0;margin:0;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-top:6px;box-shadow:0 -6px 20px rgba(0,0,0,.08)}
+.hgrabzone{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 6px;margin:-6px -18px 0;touch-action:none;flex-shrink:0;position:sticky;top:-6px;background:#fff;z-index:2;border-radius:26px 26px 0 0}
+.hgrab{width:40px;height:5px;border-radius:3px;background:#D6DCD9}
+.hpeek{display:none;border:0;background:none;height:36px;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:#3E5457;width:100%;min-width:0}
 .hpeek svg{transform:rotate(180deg);flex-shrink:0}
 .hpeek span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#view.hfull{overflow:hidden}
-#view.hfull .hmap{height:calc(100% + 6px)}
-#view.hfull .hsheet{min-height:0;height:76px;overflow:hidden;gap:2px;padding-top:14px}
-#view.hfull .hsheet>*:not(.hgrab):not(.hpeek){display:none}
-#view.hfull .hpeek{display:flex}
+.hdock.down .hpeek{display:flex}
+.hdock.down .hsheet{overflow:hidden}
+.hmap .mapboxgl-ctrl-bottom-right{bottom:auto;top:96px}
+.hmap .mapboxgl-ctrl-bottom-left{display:none}
+.hdock .hsheet>*{flex-shrink:0}
+.hdock .hsheet{padding-bottom:24px}
+
+/* 즐겨찾기 */
+.mcat.fav{color:#1C2B2E}
+.favdot{width:22px;height:22px;border-radius:50%;background:#E5484D;border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.25);flex-shrink:0}
+.card .favdot{width:30px;height:30px;border:0}
+.favpin{border:0;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center}
+.favpin.on .favdot{width:30px;height:30px;box-shadow:0 0 0 6px rgba(229,72,77,.22),0 1px 4px rgba(0,0,0,.25)}
+.favlab{display:none;font:600 11px 'Noto Sans KR',sans-serif;color:#B4232A;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;white-space:nowrap;margin-top:2px;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+.z16 .favlab,.favpin.on .favlab{display:block}
+.hdock.down .hsheet>*:not(.hgrabzone){visibility:hidden}

@@ -37,6 +37,7 @@ const I = {
   back:'<path d="M15 18l-6-6 6-6"/>',
   search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   crosshair:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
+  heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
   chev:'<path d="M9 6l6 6-6 6"/>', chevd:'<path d="M6 9l6 6 6-6"/>',
   nav:'<path d="M3 11l19-9-9 19-2-8-8-2z"/>',
   bag:'<path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/>',
@@ -91,6 +92,8 @@ const CAT_ICON = { food:'food', cafe:'cafe', stay:'bed', beach:'wave', act:'boat
 const TCATS = { flight:'항공', hotel:'숙소', tour:'투어', shuttle:'교통', food:'식당', etc:'기타' };
 const TCAT_ICON = { flight:'plane', shuttle:'bus', tour:'boat', hotel:'bed', food:'food', etc:'ticket' };
 
+// 여자친구 구글맵 '보라카이' 저장 목록 (Google place ID만 저장, 위치는 앱에서 Google에 물어봐서 채움)
+const FAV_SEED = [["ChIJJdfnlrU9pTMR6_4oqmdDiJU", "Chubby Crab Ph Boracay", "food"], ["ChIJv5vT9mU9pTMRsfVbsbP7gQs", "Cafe Uno Boracay", "food"], ["ChIJDeBfqWQ9pTMRNf9yA0WUpAU", "Gerry's Grill Station 1 (Mito's Place)", "food"], ["ChIJR3yY8xc8pTMRMrKf3UMZ5r0", "The Pig Out Bistro", "food"], ["ChIJyTkDfCI8pTMRQjaytrhnZls", "Money Changer By Queen's", "shop"], ["ChIJ34Ba0Do_pTMR9XHY0I0URtk", "Bistro des Amis", "food"], ["ChIJ-0qso2I8pTMRNIrXs5qrXy4", "Puka Shell Beach", "beach", "puka"], ["ChIJzQb2NBk9pTMRZ27M2o7Govc", "Robinsons Supermarket (Station B Mall)", "shop"], ["ChIJ2ZYowHw9pTMRf_vCEbNCJzc", "The Sunny Side Cafe", "food"], ["ChIJjeyYtyI8pTMRLxBfFIr4bhE", "버짓 마트", "shop"], ["ChIJHV-0-xc8pTMRIGyS0ogx4sA", "Jonah's Fruit Shake & Snack Bar", "cafe", "jonahs"], ["ChIJfZfCZBg8pTMRM8DBzaz2cL4", "Aria Restaurant", "food"], ["ChIJ9SjTsJk_pTMRggd7sWCAoDE", "TGH The Grillhouse Sportsbar", "food"], ["ChIJHVGzVyM8pTMRVGnfxDgGW5E", "레반틴 보라카이", "stay"], ["ChIJEZp3Yzs8pTMRRk39gb5nhyo", "Bulabog Beach", "beach", "bulabog"], ["ChIJHae4G7g9pTMR-fEMTDzw9yM", "I Love Boracay", "spot"], ["ChIJQ4r3_iI8pTMRgFuocXT1w7A", "금강산 보라카이 (한식)", "food"], ["ChIJze8N62I9pTMR4PYCyzm04ZM", "MUNIMUNI BORACAY", "food"], ["ChIJiWR5DAA9pTMR6ZCebiEpLoA", "Chimney Cake Boracay", "cafe"], ["ChIJb3NcfBKdpTMRf5D4rr5fSgA", "cafeone 칼리보 공항 라운지", "cafe"], ["ChIJfQdkayY8pTMR-ykXO5nIPNE", "Club Galaxy", "spot"], ["ChIJlSHGFRg8pTMR_zZ1tMWcLR4", "Summer Place", "food"], ["ChIJwT46r2w9pTMRlVUR2UV-nsY", "JumboCrab", "food"], ["ChIJ_____zw8pTMRGYZAoNDu6Js", "I Luv Backyard BBQ", "food"], ["ChIJgf0DyOc9pTMR2uMXVBMtVt4", "IslandVault (카드·커피)", "shop"], ["ChIJ28YXmxc8pTMRFRIwdq71h3I", "스타벅스 (Boat Station 1)", "cafe"], ["ChIJqUS69SI8pTMRhSfWHsSECs4", "Coco Mama", "cafe"], ["ChIJi-btmyI8pTMR7ePGOYolp-Y", "Island Chicken Inasal", "food"], ["ChIJ0XFGhp89pTMRs_LmuQKrU40", "Redcrab Boracay", "food"], ["ChIJRZVYKD08pTMRd8uuySUcFnY", "Hello Spa & Hello Foot Spa", "act"], ["ChIJCyipUpM9pTMR4PDO0QXc8MY", "졸리비 (Beachfront)", "food"], ["ChIJlRhKuSI8pTMRO4T9oRxbfWU", "HaloMango (D'Mall)", "cafe"], ["ChIJq1AnIxg8pTMR7D0HcFU4EFw", "Gerry's Grill Station 2", "food"], ["ChIJ37BoRE89pTMRDuHn5lI67EI", "Cheeze Moon Pink Moon", "cafe"], ["ChIJUdbVevA9pTMRhhu-JhDyILE", "인생네컷 (D'Mall 2층)", "shop"], ["ChIJb5hQmyI8pTMRZtpq1nlR3ns", "Epic Boracay", "food"], ["ChIJN55cXXE8pTMRkPMfXW6s4J0", "Crimson Resort & Spa", "stay", "crimson"], ["ChIJufKSmyI8pTMRgjGViTPXTh0", "Henann Crystal Sands Resort", "stay", "henann"], ["ChIJ869ObRg8pTMRpzlcCpuT278", "사바비 레스토랑", "food"], ["ChIJIy8j3SM8pTMRF4cTD9InnQA", "차스파 (마사지)", "act"], ["ChIJjX844Dw8pTMRp7Z0wedotN8", "Aqua Boracay", "stay"]];
 const PLAN_PLACES = [
   { id:'henann', name:'Henann Crystal Sands Resort', cat:'stay', area:'Station 1~D\'Mall 사이 해변', lat:11.96286, lng:121.92405 },
   { id:'crimson', name:'Crimson Resort & Spa', cat:'stay', area:'Station Zero (Yapak)', lat:11.98239, lng:121.90878 }
@@ -203,7 +206,7 @@ function render() {
   if (S.ui.tab === 'home' || S.ui.tab === 'sunset') maybeWeather();
   $('#view').innerHTML = ({ home: viewHome, todo: viewTodo, sunset: viewSunset, tickets: viewTickets, money: viewMoney, more: viewMore, places: viewPlaces, check: viewCheck, journal: viewJournal }[S.ui.tab] || viewHome)();
   if (S.ui.tab === 'money') updateFx();
-  $('#view').classList.toggle('hfull', S.ui.tab === 'home' && homeFull);
+  $('#view').classList.toggle('vhome', S.ui.tab === 'home');
   if (S.ui.tab === 'home') mountHomeMap();
   hydrateImages();
 }
@@ -275,12 +278,13 @@ function viewHome() {
         <button class="icon" data-act="settings" aria-label="설정">${svg('gear', 22, '#5B6B6E')}</button>
       </div>
     </div>
+  </div>
+  <div class="hdock${homeFull ? ' down' : ''}">
     <div class="hctl"><button class="hfab" data-act="homeFit" aria-label="오늘 동선 보기">${svg('crosshair', 18, '#1C2B2E')}</button>
       <button class="hbig" data-act="tab" data-tab="map">${svg('map', 16, G)}지도 탭</button></div>
-  </div>
   <div class="hsheet">
-    <div class="hgrab" aria-hidden="true"></div>
-    <button class="hpeek" data-act="homeExpand">${svg('chevd', 16, '#5B6B6E')}<span>위로 올려 일정 보기${next ? ' · 다음: ' + esc(np ? np.name : next.title) : ''}</span></button>
+    <div class="hgrabzone"><div class="hgrab" aria-hidden="true"></div>
+    <button class="hpeek" data-act="homeExpand">${svg('chevd', 16, '#5B6B6E')}<span>위로 올려 일정 보기${next ? ' · 다음: ' + esc(np ? np.name : next.title) : ''}</span></button></div>
     <div class="hsteps"><div class="hline"><i style="width:${(prog * 100).toFixed(0)}%"></i></div>${steps}</div>
     ${next ? `<div class="hnext">
       <span class="hnext-ic">${svg(np ? (CAT_ICON[np.cat] || 'pin') : 'list', 26, '#fff')}</span>
@@ -317,7 +321,7 @@ function viewHome() {
       <span class="num muted" style="width:44px;font-size:14px">${esc(it.time || '--:--')}</span>
       <span style="flex:1;min-width:0;display:flex;flex-direction:column"><span class="${it.done ? 'done-text' : ''}" style="font-size:15px;font-weight:500">${esc(it.title)} ${it.sunset ? '<span class="tag">선셋</span>' : ''}</span>
       ${placeById(it.placeId) ? `<span class="small muted">${esc(placeById(it.placeId).name)}</span>` : ''}</span></div>`).join('') : '<div class="empty">아직 할 일이 없어요</div>'}</div>
-  </div>`;
+  </div></div>`;
 }
 function homeExtra() {
   const st = S.expenses.reduce((a, e) => a + (+e.amount || 0), 0), bud = +S.trip.budget || 0;
@@ -673,6 +677,7 @@ function centerOn(p) {
 
 /* ----- 지도 탭 화면 (헤더 · 범례 · 장소 카드) ----- */
 const MAP_CATS = [['food', '맛집', 'food'], ['cafe', '카페', 'cafe'], ['beach', '해변', 'wave']];
+const favCount = () => S.places.filter((p) => p.fav).length;
 function buildMapHeader() {
   $('#mapTop').innerHTML = `
     <div class="mtrow">
@@ -700,7 +705,7 @@ function renderSearch() {
 }
 function renderMapCats() {
   const f = S.ui.placeFilter;
-  $('#mapCats').innerHTML = MAP_CATS.map(([k, label, ic]) =>
+  $('#mapCats').innerHTML = `<button class="mcat fav" data-act="favSheet">${svg('heart', 15, '#E5484D', 2.4)}즐겨찾기 <span class="muted" style="font-weight:500">${favCount()}</span></button>` + MAP_CATS.map(([k, label, ic]) =>
     `<button class="mcat ${f === k ? 'on' : ''}" data-act="pfilter" data-f="${f === k ? 'all' : k}" aria-pressed="${f === k}">${svg(ic, 16, f === k ? '#fff' : G)}${label}</button>`).join('');
 }
 const routeOn = () => false; // 지도 탭의 동선 표시는 없앰 (홈 지도에서만 오늘 동선을 보여 줌)
@@ -758,6 +763,7 @@ function renderMapCardInner() {
       <div class="between" style="gap:6px"><button data-act="openPlace" data-id="${p.id}" class="row" style="border:0;background:none;padding:0;text-align:left;flex:1;min-width:0;gap:4px">
         <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b style="font-size:16px">${esc(p.name)}</b><span class="muted" style="font-size:12px"> · ${esc(p.area || CATS[p.cat] || '')}</span></span>
         ${svg('chev', 16, '#1C2B2E')}</button>
+        <button class="icon" data-act="favToggle" data-id="${p.id}" aria-label="즐겨찾기" style="width:32px;height:32px;flex-shrink:0">${svg('heart', 18, p.fav ? '#E5484D' : '#9AA5A7', 2.2)}</button>
         <button class="icon" data-act="selClear" aria-label="닫기" style="width:32px;height:32px;flex-shrink:0">${svg('close', 16, '#5B6B6E')}</button></div>
       ${g.state === 'ok' ? '<div id="ownGSlot" class="poig"></div>' : `<div class="poig-msg">${g.state === 'loading' ? 'Google 정보 찾는 중…' : g.state === 'none' ? 'Google에서 이 장소를 찾지 못했어요' : 'Google 정보를 불러오지 못했어요'}</div>`}
       <div class="between" style="gap:6px">
@@ -855,6 +861,7 @@ function initMap() {
     map.addLayer({ id: 'nav', type: 'line', source: 'nav', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1A73E8', 'line-width': 5 } });
     addDecorMarkers();
     setupPoiTap();
+    const zc = () => map.getContainer().classList.toggle('z16', map.getZoom() >= 16); map.on('zoom', zc); zc();
     refreshMap();
     showMapFail(false);
     runMapQueue();
@@ -906,6 +913,13 @@ function addDecorMarkers() {
   UMBS.forEach((ll) => mk(`<svg width="20" height="22" viewBox="-10 -21 20 22" aria-hidden="true">${UMB}</svg>`, ll));
 }
 function mbPin(p, n, on) {
+  if (!n && p.fav) {
+    const el = document.createElement('button'); el.dataset.mb = '1'; el.setAttribute('aria-label', '즐겨찾기 ' + p.name);
+    el.className = 'favpin' + (on ? ' on' : '');
+    el.innerHTML = `<span class="favdot">${svg('heart', on ? 14 : 11, '#fff', 2.4)}</span><span class="favlab">${esc(p.name)}</span>`;
+    el.addEventListener('click', (ev) => { ev.stopPropagation(); if (POI) closePoi(true); S.ui.selPlace = p.id; save(); refreshMap(); });
+    return new mapboxgl.Marker({ element: el, anchor: 'top', offset: [0, -11] }).setLngLat([p.lng, p.lat]).addTo(map);
+  }
   const el = document.createElement('button'); el.dataset.mb = '1'; el.setAttribute('aria-label', (n ? n + '번 ' : '') + p.name);
   el.style.cssText = 'border:0;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center';
   const label = `<span style="font:500 11px 'Noto Sans KR',sans-serif;color:#1C2B2E;text-shadow:0 0 3px #fff,0 0 3px #fff;white-space:nowrap;margin-top:2px">${esc(p.name)}</span>`;
@@ -930,7 +944,7 @@ function refreshMap() {
   markers.forEach((m) => m.remove()); numMarkers.forEach((m) => m.remove()); markers = []; numMarkers = [];
   const f = S.ui.placeFilter, stops = routeOn() ? routeStops() : [], ids = stops.map((p) => p.id);
   // 지도에는 그날 일정(번호 핀)만 크게 표시. 다른 저장 장소는 맛집·카페 버튼을 눌렀을 때나 고른 장소만 보여 줌
-  S.places.filter((p) => p.lat && !ids.includes(p.id) && ((f !== 'all' && p.cat === f) || p.id === S.ui.selPlace)).forEach((p) => markers.push(mbPin(p, 0, p.id === S.ui.selPlace)));
+  S.places.filter((p) => p.lat && !ids.includes(p.id) && ((f === 'fav' ? p.fav : f !== 'all' ? p.cat === f : p.fav) || p.id === S.ui.selPlace)).forEach((p) => markers.push(mbPin(p, 0, p.id === S.ui.selPlace)));
   stops.forEach((p, i) => numMarkers.push(mbPin(p, i + 1, p.id === S.ui.selPlace)));
   const track = (trackOn() && S.track && S.track[S.ui.day]) || [];
   map.getSource('track').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: track.length > 1 ? track : [] } });
@@ -1030,7 +1044,8 @@ function poiCard() {
     : `<div class="poig-msg">Google 정보를 불러오지 못했어요</div>`;
   return `<div class="mcard" style="flex-direction:column;align-items:stretch;gap:8px">
     <div class="between" style="gap:8px"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b style="font-size:16px">${esc(p.name || label)}</b><span class="muted" style="font-size:12px">${p.name ? ' · ' + label : ''}${p.guess && p.gstate === 'ok' ? ' · 가까운 곳 추정' : ''}</span></span>
-      <button class="icon" data-act="poiClose" aria-label="닫기" style="width:32px;height:32px;flex-shrink:0">${svg('close', 16, '#5B6B6E')}</button></div>
+      <span class="row" style="gap:0"><button class="icon" data-act="poiFav" aria-label="즐겨찾기에 넣기" style="width:32px;height:32px">${svg('heart', 18, '#9AA5A7', 2.2)}</button>
+      <button class="icon" data-act="poiClose" aria-label="닫기" style="width:32px;height:32px;flex-shrink:0">${svg('close', 16, '#5B6B6E')}</button></span></div>
     ${g}
     <div class="between" style="gap:6px">
       <span class="row" style="gap:12px">${p.gstate === 'ok' ? `<button data-act="poiFull" class="poilink">리뷰·사진 ›</button>` : ''}${GOOGLE_KEY && p.gstate !== 'nokey' ? `<button data-act="poiOther" class="poilink" style="color:#5B6B6E">${p.gstate === 'ok' ? '다른 곳이에요' : '근처에서 찾기'}</button>` : ''}</span>
@@ -1101,6 +1116,38 @@ function ensureGid(p) {
     const t0 = Date.now(), iv = setInterval(() => { const g = GOWN[p.id]; if (p.gid || !g || g.state !== 'loading' || Date.now() - t0 > 8000) { clearInterval(iv); res(p.gid || null); } }, 200);
   });
 }
+// 즐겨찾기 장소 위치를 Google에서 받아 25일 동안 기억 (Google 규정상 좌표는 30일까지만 저장)
+let favResolving = false;
+async function resolveFavs() {
+  if (!GOOGLE_KEY || gAuthFail || favResolving || navigator.onLine === false) return;
+  const need = S.places.filter((p) => p.fav && p.gid && (!p.lat || !p.gAt || Date.now() - p.gAt > 25 * 864e5));
+  if (!need.length) return;
+  favResolving = true;
+  try {
+    const { Place } = await loadGoogle();
+    for (const p of need) {
+      try { const pl = new Place({ id: p.gid }); await pl.fetchFields({ fields: ['location'] }); if (pl.location) { p.lat = +pl.location.lat().toFixed(6); p.lng = +pl.location.lng().toFixed(6); p.gAt = Date.now(); } } catch (e) {}
+    }
+    save();
+    if (S.ui.tab === 'map') refreshMap(); else if (S.ui.tab === 'home') updateHomeMap();
+  } catch (e) {} finally { favResolving = false; }
+}
+setTimeout(resolveFavs, 1500);
+function favSheet() {
+  const favs = S.places.filter((p) => p.fav);
+  const order = ['food', 'cafe', 'shop', 'act', 'beach', 'spot', 'stay', 'etc'];
+  const groups = order.map((c) => [c, favs.filter((p) => (CATS[p.cat] ? p.cat : 'etc') === c)]).filter(([, l]) => l.length);
+  const me = userPos && insideBoracay(userPos) ? userPos : null;
+  openSheet(`<div class="between"><h2 style="font-size:20px">${svg('heart', 18, '#E5484D')} 즐겨찾기 <span class="muted" style="font-size:14px;font-weight:500">${favs.length}곳</span></h2></div>
+    <p class="small muted" style="margin:4px 0 12px">누르면 지도에서 보여 줘요</p>
+    ${favs.length ? groups.map(([c, l]) => `<h3 class="small muted" style="margin:12px 0 6px;font-weight:700">${CATS[c] || '기타'} · ${l.length}</h3>
+      <div class="stack" style="gap:6px">${l.map((p) => `<button class="card row" data-act="favGo" data-id="${p.id}" style="border:0;text-align:left;gap:10px;min-height:52px">
+        <span class="favdot">${svg(CAT_ICON[p.cat] || 'pin', 16, '#fff', 2.2)}</span>
+        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700">${esc(p.name)}</span>
+        <span class="small muted">${me && p.lat ? fmtDist(Math.hypot((p.lng - me.lng) * 108900, (p.lat - me.lat) * 110600)) : (p.lat ? '' : '위치 확인 중')}</span></button>`).join('')}</div>`).join('')
+      : '<div class="empty">아직 즐겨찾기가 없어요. 장소 카드의 ♥를 눌러 보세요</div>'}`);
+}
+function toggleFav(p) { p.fav = !p.fav; save(); toast(p.fav ? '즐겨찾기에 넣었어요' : '즐겨찾기에서 뺐어요'); if (p.fav && !p.lat) resolveFavs(); }
 function poiAdd() {
   const p = POI; if (!p) return;
   const place = { id: uid(), name: p.gname || p.name || CATS[p.cat] || '새 장소', cat: CATS[p.cat] ? p.cat : 'etc', area: '', lat: +p.lat.toFixed(6), lng: +p.lng.toFixed(6), menu: [], memo: '', coordV: 2 };
@@ -1142,6 +1189,14 @@ function ensureTrip(t) {
   }
   t.planV = 1;
   t.ui.mapMode = 'mapbox'; // 기본(그림) 지도는 없애고 Mapbox만 씀
+  if (!t.favV) {
+    FAV_SEED.forEach(([gid, name, cat, mine]) => {
+      const ex = t.places.find((p) => p.gid === gid || (mine && p.id === mine));
+      if (ex) { ex.fav = true; if (ex.gid !== gid) { ex.gid = gid; delete ex.gAt; } }
+      else t.places.push({ id: 'g' + gid.slice(-10).replace(/[^A-Za-z0-9]/g, ''), name, cat, area: '', gid, fav: true, menu: [], memo: '', coordV: 2 });
+    });
+    t.favV = 1;
+  }
   return t;
 }
 let DB;
@@ -1398,10 +1453,10 @@ function todoForm(existing, presetPlace) {
 /* ========= 장소 · 맛집 ========= */
 function viewPlaces() {
   const f = S.ui.placeList || 'all', q = (S.ui.placeQ || '').toLowerCase();
-  const list = S.places.filter((p) => (f === 'all' || (f === 'visited' ? p.visited : f === 'must' ? p.priority === 'must' : p.cat === f)))
+  const list = S.places.filter((p) => (f === 'all' || (f === 'visited' ? p.visited : f === 'fav' ? p.fav : f === 'must' ? p.priority === 'must' : p.cat === f)))
     .filter((p) => !q || [p.name, p.area, p.signature, p.memo, ...(p.menu || []).map((m) => m.name)].join(' ').toLowerCase().includes(q))
     .sort((a, b) => (a.visited - b.visited) || ((b.priority === 'must') - (a.priority === 'must')));
-  const chips = [['all', '전체'], ['must', '꼭 가기'], ...Object.entries(CATS), ['visited', '방문 완료']];
+  const chips = [['all', '전체'], ['fav', '♥ 즐겨찾기'], ['must', '꼭 가기'], ...Object.entries(CATS), ['visited', '방문 완료']];
   return `<div class="stack" style="gap:14px">
     ${subHead('장소 · 맛집', '맛집부터 작은 카페까지. 저장해 두고 일정에 쏙.', addBtn('newPlace', '장소 저장'))}
     <label class="msearch" style="height:46px">${svg('search', 18, '#5B6B6E')}<input id="placeListQ" type="search" placeholder="장소·메뉴 검색" value="${esc(S.ui.placeQ || '')}" aria-label="장소·메뉴 검색"></label>
@@ -1448,7 +1503,7 @@ function placeSheet(p) {
   const link = p.url || gSearch(p.lat ? p : { q: p.name + ' ' + (p.area || S.trip.city || '') });
   openSheet(`
     <div class="between"><span class="small" style="color:var(--coralink);font-weight:500">${CATS[p.cat] || '장소'}${p.priority === 'must' ? ' · 꼭 가기' : ''}</span>
-      <span class="row" style="gap:0"><button class="icon" data-act="editPlace" data-id="${p.id}" aria-label="장소 수정">${svg('edit', 18, '#5B6B6E')}</button>
+      <span class="row" style="gap:0"><button class="icon" data-act="favToggle" data-id="${p.id}" data-sheet="1" aria-label="즐겨찾기">${svg('heart', 20, p.fav ? '#E5484D' : '#9AA5A7', 2.2)}</button><button class="icon" data-act="editPlace" data-id="${p.id}" aria-label="장소 수정">${svg('edit', 18, '#5B6B6E')}</button>
       <button class="icon" data-act="delPlace" data-id="${p.id}" aria-label="장소 삭제">${svg('trash', 18, '#B3412A')}</button></span></div>
     <h2 style="font-size:22px">${esc(p.name)}</h2>
     <p class="muted small" style="margin:4px 0 12px">${esc(p.area || '')}${p.hours ? ' · 영업 ' + esc(p.hours) : ''}</p>
@@ -2056,33 +2111,49 @@ function loadMapboxLib() {
   });
   return mbLibPromise;
 }
-// 홈: 아래 카드를 끌어내리면 지도 전체 화면, 다시 올리면 원래대로
+// 홈: 지도는 화면 전체에 깔려 있고, 일정 카드(dock)가 그 위로 올라오거나 내려감 (지도 크기를 바꾸지 않아서 부드러움)
 let homeFull = false;
 function setHomeFull(on) {
-  homeFull = on; const v = $('#view');
-  v.scrollTop = 0; v.classList.toggle('hfull', on);
-  [60, 180, 340].forEach((t) => setTimeout(() => { if (homeMap) homeMap.resize(); }, t));
+  homeFull = on;
+  const d = document.querySelector('.hdock'); if (!d) return;
+  d.style.transition = ''; d.style.transform = '';
+  d.classList.toggle('down', on);
+  if (!on) { const sh = d.querySelector('.hsheet'); if (sh) sh.scrollTop = 0; }
 }
 (function bindHomeSwipe() {
-  const v = $('#view'); let y0 = null, st0 = 0, sheet = null, dy = 0;
-  v.addEventListener('touchstart', (e) => {
-    if (S.ui.tab !== 'home' || e.touches.length !== 1) { y0 = null; return; }
-    sheet = e.target.closest('.hsheet'); if (!sheet) { y0 = null; return; }
-    y0 = e.touches[0].clientY; st0 = v.scrollTop; dy = 0;
+  let st = null;
+  const dockOffset = (d) => d.offsetHeight - 76; // 내려갔을 때 이동 거리
+  document.addEventListener('touchstart', (e) => {
+    const d = e.target.closest && e.target.closest('.hdock');
+    if (!d || S.ui.tab !== 'home' || e.touches.length !== 1 || e.target.closest('.hctl')) { st = null; return; }
+    const sh = d.querySelector('.hsheet');
+    st = { d, sh, y0: e.touches[0].clientY, t0: Date.now(), dy: 0, drag: false, grab: !!e.target.closest('.hgrabzone'), off: dockOffset(d), raf: 0 };
   }, { passive: true });
-  v.addEventListener('touchmove', (e) => {
-    if (y0 === null) return;
-    dy = e.touches[0].clientY - y0;
-    if (!homeFull && st0 <= 0 && v.scrollTop <= 0 && dy > 0) sheet.style.transform = `translateY(${Math.min(dy, 260) * 0.7}px)`;
-    else if (homeFull && dy < 0) sheet.style.transform = `translateY(${Math.max(dy, -120) * 0.5}px)`;
-  }, { passive: true });
-  v.addEventListener('touchend', () => {
-    if (y0 === null) return;
-    if (sheet) sheet.style.transform = '';
-    if (!homeFull && st0 <= 0 && dy > 70) setHomeFull(true);
-    else if (homeFull && dy < -30) setHomeFull(false);
-    y0 = null;
-  });
+  document.addEventListener('touchmove', (e) => {
+    if (!st) return;
+    const dy = e.touches[0].clientY - st.y0; st.dy = dy;
+    if (!st.drag) {
+      if (Math.abs(dy) < 6) return;
+      // 펼쳐진 상태: 카드 내용이 맨 위일 때 아래로 끌면 드래그, 아니면 카드 안 스크롤
+      if (!homeFull && dy > 0 && (st.grab || st.sh.scrollTop <= 0)) st.drag = true;
+      else if (homeFull) st.drag = true;
+      else { st = null; return; }
+      st.d.style.transition = 'none';
+    }
+    e.preventDefault();
+    const base = homeFull ? st.off : 0, y = Math.max(0, Math.min(st.off, base + dy));
+    if (!st.raf) st.raf = requestAnimationFrame(() => { if (st) { st.d.style.transform = `translateY(${y}px)`; st.raf = 0; } });
+  }, { passive: false });
+  const end = () => {
+    if (!st) return;
+    const s0 = st; st = null;
+    if (!s0.drag) return;
+    if (s0.raf) cancelAnimationFrame(s0.raf);
+    const v = s0.dy / Math.max(1, Date.now() - s0.t0); // px/ms
+    const goDown = homeFull ? !(s0.dy < -40 || v < -0.4) : (s0.dy > 80 || v > 0.5);
+    setHomeFull(goDown);
+  };
+  document.addEventListener('touchend', end); document.addEventListener('touchcancel', end);
 })();
 let homeMap = null, homeMbEl = null, homeMbState = 'idle', homeMbKey = '', homeMarkers = [], homeFitSig = '';
 function dropHomeMap() {
@@ -2165,8 +2236,8 @@ function updateHomeMap() {
     homeFitSig = sig;
     const pts = stops.length ? stops.map((p) => [p.lng, p.lat]) : WHITE_BEACH;
     const xs = pts.map((c) => c[0]), ys = pts.map((c) => c[1]);
-    if (pts.length > 1) homeMap.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: { top: 110, bottom: 70, left: 60, right: 60 }, maxZoom: 15.5, duration: 0 });
-    else homeMap.jumpTo({ center: pts[0], zoom: 15 });
+    if (pts.length > 1) homeMap.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: { top: 110, bottom: homeFull ? 110 : Math.round(((document.querySelector('.hdock') || {}).offsetHeight || 300) + 40), left: 60, right: 60 }, maxZoom: 15.5, duration: 0 });
+    else homeMap.jumpTo({ center: pts[0], zoom: 15, padding: { top: 90, bottom: homeFull ? 80 : Math.round(((document.querySelector('.hdock') || {}).offsetHeight || 300)), left: 0, right: 0 } });
   }
 }
 
@@ -2184,8 +2255,13 @@ document.addEventListener('click', (e) => {
   switch (a) {
     case 'tab': closeSheet(); if (POI) closePoi(true); S.ui.tab = b.dataset.tab; rerender(); break;
     case 'poiClose': closePoi(); break;
+    case 'favSheet': favSheet(); break;
+    case 'favGo': { const p = placeById(id); closeSheet(); if (!p) break; if (!p.lat) { toast('위치를 확인하는 중이에요. 잠시 후 다시 눌러 주세요'); resolveFavs(); break; } if (POI) closePoi(true); S.ui.selPlace = p.id; save(); refreshMap(); whenMapReady(() => map.flyTo({ center: [p.lng, p.lat], zoom: Math.max(map.getZoom(), 16.5), padding: { top: headerH(), bottom: bottomH() + 120, left: 0, right: 0 } })); break; }
+    case 'favToggle': { const p = placeById(id); if (!p) break; toggleFav(p); if (b.dataset.sheet) placeSheet(p); if (S.ui.tab === 'map') { refreshMap(); renderMapCats(); } else rerender(); break; }
+    case 'poiFav': { const p = POI; if (!p) break; const place = { id: uid(), name: p.gname || p.name || CATS[p.cat] || '새 장소', cat: CATS[p.cat] ? p.cat : 'etc', area: '', lat: +p.lat.toFixed(6), lng: +p.lng.toFixed(6), menu: [], memo: '', coordV: 2, fav: true }; if (p.gid) place.gid = p.gid; S.places.unshift(place); closePoi(true); S.ui.selPlace = place.id; save(); refreshMap(); renderMapCats(); toast('즐겨찾기에 넣었어요'); break; }
     case 'homeFit': homeFitSig = ''; updateHomeMap(); break;
     case 'homeExpand': setHomeFull(false); break;
+    case 'homeCollapse': setHomeFull(true); break;
     case 'homeRetry': dropHomeMap(); homeMbState = 'idle'; rerender(); break;
     case 'poiFull': poiFullSheet(); break;
     case 'poiOther': poiOtherSheet(); break;
