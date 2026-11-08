@@ -37,7 +37,7 @@ const I = {
   back:'<path d="M15 18l-6-6 6-6"/>',
   search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   crosshair:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
-  chev:'<path d="M9 6l6 6-6 6"/>',
+  chev:'<path d="M9 6l6 6-6 6"/>', chevd:'<path d="M6 9l6 6 6-6"/>',
   nav:'<path d="M3 11l19-9-9 19-2-8-8-2z"/>',
   bag:'<path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/>',
   grid:'<rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/>',
@@ -700,17 +700,36 @@ function renderMapCats() {
   $('#mapCats').innerHTML = MAP_CATS.map(([k, label, ic]) =>
     `<button class="mcat ${f === k ? 'on' : ''}" data-act="pfilter" data-f="${f === k ? 'all' : k}" aria-pressed="${f === k}">${svg(ic, 16, f === k ? '#fff' : G)}${label}</button>`).join('');
 }
+const routeOn = () => S.ui.showRoute !== false;
+const trackOn = () => S.ui.showTrack !== false;
 function renderMapLegend() {
-  const isToday = S.ui.day === currentDay();
-  $('#mapLegend').innerHTML = `
-    <button data-act="mapNextDay" class="legend" aria-label="동선 날짜 바꾸기">
-      <span class="row" style="gap:7px"><span style="width:20px;height:3px;border-radius:2px;background:${GL}"></span><b>${isToday ? '오늘의 계획' : `D${dayIndex(S.ui.day)} 계획`}</b></span>
-      <span class="row" style="gap:7px"><svg width="20" height="6" aria-hidden="true"><path d="M2 3H19" stroke="${G}" stroke-width="3" stroke-dasharray="1 5" stroke-linecap="round"/></svg><b>이동 기록</b></span>
-    </button>`;
+  const n = routeStops().length, isToday = S.ui.day === todayStr();
+  $('#mapLegend').innerHTML = routeOn()
+    ? `<div class="rpill"><button data-act="routeSheet" class="rpill-main" aria-label="동선 날짜 고르기"><span class="rline"></span><b>${isToday ? '오늘' : 'D' + dayIndex(S.ui.day)} 동선</b><span class="muted">${n}곳</span>${svg('chevd', 14, '#5B6B6E')}</button><button data-act="routeOff" class="rpill-x" aria-label="동선 숨기기">${svg('close', 14, '#5B6B6E')}</button></div>`
+    : `<div class="rpill"><button data-act="routeSheet" class="rpill-main" aria-label="동선 보기"><span class="rline" style="opacity:.4"></span><b>동선 보기</b></button></div>`;
   $('#mapLocate').innerHTML = `<button data-act="locate" aria-label="내 위치로">${svg('crosshair', 22, '#1C2B2E')}</button>`;
 }
+function routeSheet() {
+  const days = tripDays();
+  openSheet(`<h2 style="font-size:20px;margin-bottom:12px">지도에 표시할 동선</h2>
+    <div class="stack" style="gap:8px">${days.map((d) => { const n = sortTodos(todosOf(d).slice()).filter((x) => { const p = placeById(x.placeId); return p && p.lat; }).length, on = routeOn() && d === S.ui.day;
+      return `<button class="card row rday ${on ? 'on' : ''}" data-act="routeDay" data-day="${d}"><b class="num" style="width:34px">D${dayIndex(d)}</b><span style="flex:1;text-align:left">${fmtDate(d)}${d === currentDay() && todayStr() >= S.trip.start ? ' · 오늘' : ''}</span><span class="muted small">${n ? n + '곳' : '장소 없음'}</span>${on ? svg('check', 16, G, 3) : ''}</button>`; }).join('')}</div>
+    <div class="between" style="margin-top:14px;gap:10px">
+      <button class="btn ghost" data-act="trackToggle" style="flex:1;height:44px">${trackOn() ? '이동 기록 숨기기' : '이동 기록 보기'}</button>
+      ${routeOn() ? '<button class="btn ghost" data-act="routeOff" style="flex:1;height:44px">동선 숨기기</button>' : ''}
+    </div>`);
+}
+function fitRoute() {
+  const pts = routeStops().map((p) => [p.lng, p.lat]);
+  if (!pts.length) return;
+  whenMapReady(() => {
+    if (pts.length === 1) { map.easeTo({ center: pts[0], zoom: Math.max(map.getZoom(), 15.5), padding: { top: headerH(), bottom: bottomH(), left: 0, right: 0 } }); return; }
+    const xs = pts.map((c) => c[0]), ys = pts.map((c) => c[1]);
+    map.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: { top: headerH() + 30, bottom: bottomH() + 40, left: 50, right: 50 }, maxZoom: 16.5 });
+  });
+}
 function placeMapFloat() {
-  const card = $('#mapCard'), b = (card.offsetHeight || 60) + 22;
+  const card = $('#mapCard'), b = (card.offsetHeight ? card.offsetHeight + 22 : 22);
   $('#mapLegend').style.bottom = b + 'px'; $('#mapLocate').style.bottom = b + 'px';
   const oa = $('.osmattr'); if (oa) oa.style.bottom = (b - 16) + 'px';
   $('#mapView').style.setProperty('--mfloat', (b - 14) + 'px');
@@ -725,15 +744,21 @@ function renderMapCardInner() {
       <span style="font-size:15px"><b>'${esc(pinT.title)}'</b> 위치를 지도에서 <b>길게 눌러</b> 정해 주세요</span>
       <button class="btn ghost" data-act="cancelPin" style="height:38px">취소</button></div>`; return; }
   if (POI) { card.innerHTML = poiCard(); const slot = $('#poiGSlot'); if (slot && POI.gel) slot.appendChild(POI.gel); return; }
-  const p = placeById(S.ui.selPlace) || routeStops()[0];
-  if (!p) { card.innerHTML = `<div class="mhint">지도를 길게 누르면 장소를 추가할 수 있어요</div>`; return; }
+  const p = placeById(S.ui.selPlace);
+  if (!p) {
+    const st = routeOn() ? routeStops() : [];
+    card.innerHTML = st.length ? `<div class="rstrip">${st.map((q, i) => `<button data-act="selPlace" data-id="${q.id}" class="rchip"><i>${i + 1}</i>${esc(q.name)}</button>`).join('')}</div>` : '';
+    return;
+  }
+  if (false) { card.innerHTML = `<div class="mhint">지도를 길게 누르면 장소를 추가할 수 있어요</div>`; return; }
   const inPlan = routeStops().some((x) => x.id === p.id);
   if (GOOGLE_KEY && !gAuthFail && p.lat) {
     const g = placeG(p);
     card.innerHTML = `<div class="mcard" style="flex-direction:column;align-items:stretch;gap:8px">
-      <button data-act="openPlace" data-id="${p.id}" class="between" style="border:0;background:none;padding:0;text-align:left;width:100%;gap:8px">
+      <div class="between" style="gap:6px"><button data-act="openPlace" data-id="${p.id}" class="row" style="border:0;background:none;padding:0;text-align:left;flex:1;min-width:0;gap:4px">
         <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b style="font-size:16px">${esc(p.name)}</b><span class="muted" style="font-size:12px"> · ${esc(p.area || CATS[p.cat] || '')}</span></span>
-        ${svg('chev', 18, '#1C2B2E')}</button>
+        ${svg('chev', 16, '#1C2B2E')}</button>
+        <button class="icon" data-act="selClear" aria-label="닫기" style="width:32px;height:32px;flex-shrink:0">${svg('close', 16, '#5B6B6E')}</button></div>
       ${g.state === 'ok' ? '<div id="ownGSlot" class="poig"></div>' : `<div class="poig-msg">${g.state === 'loading' ? 'Google 정보 찾는 중…' : g.state === 'none' ? 'Google에서 이 장소를 찾지 못했어요' : 'Google 정보를 불러오지 못했어요'}</div>`}
       <div class="between" style="gap:6px">
         <span class="row" style="gap:12px"><button data-act="openPlace" data-id="${p.id}" class="poilink">메뉴·가격 ›</button>${g.state === 'ok' ? `<button data-act="gFull" data-id="${p.id}" class="poilink">리뷰·사진 ›</button>` : ''}<button data-act="gOther" data-id="${p.id}" class="poilink" style="color:#5B6B6E">${g.state === 'ok' ? '다른 곳?' : '근처 찾기'}</button></span>
@@ -903,11 +928,11 @@ function refreshMap() {
   if (S.ui.tab === 'map') { renderMapCard(); renderMapLegend(); }
   if (mapState !== 'ready') return;
   markers.forEach((m) => m.remove()); numMarkers.forEach((m) => m.remove()); markers = []; numMarkers = [];
-  const f = S.ui.placeFilter, stops = routeStops(), ids = stops.map((p) => p.id);
+  const f = S.ui.placeFilter, stops = routeOn() ? routeStops() : [], ids = stops.map((p) => p.id);
   // 지도에는 그날 일정(번호 핀)만 크게 표시. 다른 저장 장소는 맛집·카페 버튼을 눌렀을 때나 고른 장소만 보여 줌
   S.places.filter((p) => p.lat && !ids.includes(p.id) && ((f !== 'all' && p.cat === f) || p.id === S.ui.selPlace)).forEach((p) => markers.push(mbPin(p, 0, p.id === S.ui.selPlace)));
   stops.forEach((p, i) => numMarkers.push(mbPin(p, i + 1, p.id === S.ui.selPlace)));
-  const track = (S.track && S.track[S.ui.day]) || [];
+  const track = (trackOn() && S.track && S.track[S.ui.day]) || [];
   map.getSource('track').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: track.length > 1 ? track : [] } });
   map.getSource('route').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: NAV ? [] : stops.map((p) => [p.lng, p.lat]) } });
   map.getSource('nav').setData(NAV ? { type: 'Feature', geometry: { type: 'LineString', coordinates: NAV.geo } } : { type: 'FeatureCollection', features: [] });
@@ -2155,6 +2180,11 @@ document.addEventListener('click', (e) => {
     case 'pfilter': S.ui.placeFilter = b.dataset.f; save(); renderMapCats(); refreshMap(); break;
     case 'selPlace': S.ui.selPlace = id; save(); refreshMap(); break;
     case 'searchPick': { const p = placeById(id); S.ui.selPlace = id; if (p.cat && S.ui.placeFilter !== 'all' && S.ui.placeFilter !== p.cat) S.ui.placeFilter = 'all'; $('#placeSearch').value = ''; $('#searchResults').style.display = 'none'; save(); renderMap(); if (p.lat && view) centerOn(p); break; }
+    case 'routeSheet': routeSheet(); break;
+    case 'routeDay': S.ui.day = b.dataset.day; S.ui.showRoute = true; S.ui.selPlace = null; if (POI) closePoi(true); save(); closeSheet(); refreshMap(); fitRoute(); break;
+    case 'routeOff': S.ui.showRoute = false; S.ui.selPlace = null; save(); closeSheet(); refreshMap(); break;
+    case 'trackToggle': S.ui.showTrack = !trackOn(); save(); closeSheet(); refreshMap(); toast(trackOn() ? '이동 기록을 보여 줘요' : '이동 기록을 숨겼어요'); break;
+    case 'selClear': S.ui.selPlace = null; save(); refreshMap(); break;
     case 'mapNextDay': { const ds = tripDays(), i = ds.indexOf(S.ui.day); S.ui.day = ds[(i + 1) % ds.length]; S.ui.selPlace = null; save(); refreshMap(); toast(`D${dayIndex(S.ui.day)} ${fmtDate(S.ui.day)} 동선`); break; }
     case 'locate': locate(); break;
     case 'mapRetry': if (map) { try { map.remove(); } catch (er) {} map = null; } mapState = navigator.onLine === false ? 'failed' : 'idle'; renderMap(); if (mapState === 'failed') toast('아직 인터넷에 연결되지 않았어요'); break;
