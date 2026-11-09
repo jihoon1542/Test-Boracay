@@ -60,11 +60,6 @@ h2{margin:0;font-size:17px}
 .pin{width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid #C2502C;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.18)}
 .pin.food{background:#C2502C}
 .pin-num{width:22px;height:22px;border-radius:50%;background:var(--teal);color:#fff;font:700 12px 'Space Grotesk',sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;pointer-events:none}
-#svgmap{position:absolute;inset:0;touch-action:none;cursor:grab;overflow:hidden}
-#svgmap svg{display:block}
-#svgmap .plabel{font:500 11px 'Noto Sans KR',sans-serif;fill:#1C2B2E;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}
-#svgmap .glabel{font:700 11px 'Noto Sans KR',sans-serif;fill:#0B4F5A;letter-spacing:.08em}
-#svgmap .slabel{font:500 10px 'Noto Sans KR',sans-serif;fill:#3E5457}
 #mapTop{position:absolute;left:0;right:0;top:0;z-index:6;padding:10px 12px 0;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 #mapTop>*{pointer-events:auto}
 .mtrow{display:flex;gap:8px;align-items:center}
@@ -81,13 +76,10 @@ h2{margin:0;font-size:17px}
 .mcats::-webkit-scrollbar{display:none}
 .mcat{height:34px;border-radius:17px;border:0;background:#fff;display:flex;align-items:center;justify-content:center;gap:5px;font-size:13px;font-weight:700;padding:0 12px;box-shadow:0 1px 6px rgba(0,0,0,.12);flex-shrink:0}
 .mcat.on{background:#17806D;border-color:#17806D;color:#fff}
-#svgmap .blabel{font:700 16px 'Noto Sans KR',sans-serif;fill:#1C2B2E;paint-order:stroke;stroke:#F3F1EA;stroke-width:4px;stroke-linejoin:round}
 #mapLocate{position:absolute;right:12px;bottom:96px;z-index:5}
 #mapLocate button{width:44px;height:44px;border-radius:50%;border:0;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.14);display:flex;align-items:center;justify-content:center}
 #mapLegend{position:absolute;left:12px;bottom:96px;z-index:5}
-.legend{border:0;background:rgba(255,255,255,.94);border-radius:12px;padding:7px 10px;box-shadow:0 2px 8px rgba(0,0,0,.1);display:flex;flex-direction:column;gap:4px;align-items:flex-start;font-size:12px}
 #mapCard{position:absolute;left:10px;right:10px;bottom:10px;z-index:5}
-.mhint{background:rgba(255,255,255,.94);border-radius:14px;padding:9px 14px;font-size:12px;color:#5B6B6E;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.1);width:max-content;max-width:100%;margin:0 auto}
 .mcard{background:#fff;border-radius:18px;padding:10px;display:flex;gap:10px;align-items:center;box-shadow:0 4px 18px rgba(0,0,0,.12)}
 .mthumb{width:64px;height:64px;border-radius:13px;border:0;background:#E6F3EF;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;padding:0}
 .mthumb img{width:100%;height:100%;object-fit:cover}
@@ -128,7 +120,6 @@ h2{margin:0;font-size:17px}
 .wxrow{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
 .wxday{flex:0 0 76px;border:1.5px solid #EEF0EC;border-radius:14px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
 .wxday.trip{border-color:#2DAA8A;background:#F2FAF7}
-.osmattr{position:absolute;right:8px;bottom:150px;font-size:9px;color:#5B6B6E;background:rgba(255,255,255,.7);padding:1px 5px;border-radius:4px;z-index:4;pointer-events:none}
 .thumbs{display:flex;gap:6px;flex-wrap:wrap}
 .thumbs img{width:64px;height:84px;object-fit:cover;border-radius:10px;background:#eee}
 .full img{width:100%;border-radius:12px;margin-bottom:8px}
@@ -137,7 +128,6 @@ pre.memo{white-space:pre-wrap;word-break:break-word;font-family:inherit;font-siz
 
 .hmap .mapboxgl-ctrl-bottom-left,.hmap .mapboxgl-ctrl-bottom-right{bottom:32px}
 .hmap .mapboxgl-ctrl-attrib.mapboxgl-compact{margin:0 8px 6px 0}
-.hosm{position:absolute;right:8px;bottom:34px;font-size:9px;color:#56676A;background:rgba(255,255,255,.75);padding:1px 5px;border-radius:4px}
 
 /* 홈 화면 앱(standalone): 노치·홈 인디케이터 여백 */
 #view{top:env(safe-area-inset-top)}
@@ -162,17 +152,6 @@ gmp-place-details-compact{width:100%;min-width:0;--gmp-mat-font-family:'Noto San
 gmp-place-details,gmp-place-search{width:100%;--gmp-mat-font-family:'Noto Sans KR',sans-serif;--gmp-mat-color-primary:#17806D;color-scheme:light}
 .gfull{min-height:120px}
 
-/* 동선 표시 스위치 · 동선 칩 */
-.rpill{display:flex;align-items:center;background:rgba(255,255,255,.96);border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.12);overflow:hidden}
-.rpill-main{border:0;background:none;height:40px;padding:0 10px 0 12px;display:flex;align-items:center;gap:6px;font-size:13px}
-.rpill-x{border:0;border-left:1px solid #E3E6E3;background:none;width:38px;height:40px;display:flex;align-items:center;justify-content:center}
-.rline{width:16px;height:3px;border-radius:2px;background:#2DAA8A}
-.rday{border:1.5px solid transparent;text-align:left;gap:10px;min-height:52px}
-.rday.on{border-color:#17806D;background:#F2F9F6}
-.rstrip{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px}
-.rstrip::-webkit-scrollbar{display:none}
-.rchip{flex-shrink:0;border:0;background:#fff;height:38px;border-radius:19px;padding:0 14px 0 6px;display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.12);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rchip i{font-style:normal;width:26px;height:26px;border-radius:50%;background:#2DAA8A;color:#fff;display:flex;align-items:center;justify-content:center;font:700 13px 'Space Grotesk',sans-serif;flex-shrink:0}
 
 /* 홈: 지도 전체 + 위로 덮는 일정 카드 */
 html,body{overscroll-behavior:none}

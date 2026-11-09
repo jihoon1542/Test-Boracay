@@ -213,34 +213,6 @@ function render() {
 
 /* ========= 홈 ========= */
 const MINT_BG = '#E6F3EF';
-function miniMap(w, h, stops) {
-  // 홈 화면용 작은 지도: 오늘 동선이 다 보이게 맞춤 (없으면 화이트비치 중심)
-  const ptsLL = stops.length ? stops.map((p) => [p.lng, p.lat]) : [[121.9175, 11.9760], [121.9285, 11.9565]];
-  if (userPos && insideBoracay(userPos)) ptsLL.push([userPos.lng, userPos.lat]);
-  const xs = ptsLL.map(([a, b]) => proj(a, b)[0]), ys = ptsLL.map(([a, b]) => proj(a, b)[1]);
-  const pad = 70, topPad = 110;
-  const bw = Math.max(Math.max(...xs) - Math.min(...xs), 60), bh = Math.max(Math.max(...ys) - Math.min(...ys), 60);
-  const k = Math.min((w - pad * 2) / bw, (h - topPad - 50) / bh, 4);
-  const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
-  const tx = w / 2 - cx * k, ty = topPad + (h - topPad - 50) / 2 - cy * k;
-  const S2 = (lng, lat) => { const [x, y] = proj(lng, lat); return [x * k + tx, y * k + ty]; };
-  const P = (arr) => arr.map(([a, b]) => proj(a, b).map((v) => v.toFixed(1)).join(',')).join(' ');
-  const route = stops.map((p) => S2(p.lng, p.lat).map((v) => v.toFixed(1)).join(',')).join(' ');
-  const pins = stops.map((p, i) => { const [x, y] = S2(p.lng, p.lat);
-    return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})"><path d="M0 0 C-5 -7 -13 -11 -13 -20 A13 13 0 1 1 13 -20 C13 -11 5 -7 0 0 Z" fill="${i === 0 ? G : GL}" stroke="#fff" stroke-width="2.5"/><text y="-15" text-anchor="middle" style="font:700 13px 'Space Grotesk',sans-serif;fill:#fff">${i + 1}</text></g>`; }).join('');
-  let me = '';
-  if (userPos && insideBoracay(userPos)) { const [x, y] = S2(userPos.lng, userPos.lat); me = `<circle cx="${x}" cy="${y}" r="20" fill="rgba(26,115,232,.18)"/><circle cx="${x}" cy="${y}" r="7" fill="#1A73E8" stroke="#fff" stroke-width="3"/>`; }
-  return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice" aria-hidden="true" style="display:block">
-    <rect width="100%" height="100%" fill="#BFE6EA"/>
-    <g transform="translate(${tx.toFixed(1)},${ty.toFixed(1)}) scale(${k.toFixed(4)})">
-      <polygon points="${P(ISLAND)}" fill="#F3F1EA"/>
-      ${BEACHES.map((bch) => `<polygon points="${P(bch)}" fill="#F4E3B4" stroke="#F4E3B4" stroke-width="6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>`).join('')}
-      <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">${ROADS[1].map((g) => `<polyline points="${P(g)}" stroke-width="2" vector-effect="non-scaling-stroke"/>`).join('')}${ROADS[0].map((g) => `<polyline points="${P(g)}" stroke-width="4.5" vector-effect="non-scaling-stroke"/>`).join('')}</g>
-    </g>
-    ${route && stops.length > 1 ? `<polyline points="${route}" fill="none" stroke="${GL}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
-    ${pins}${me}
-  </svg>`;
-}
 const walkInfo = (p) => {
   if (!userPos || !insideBoracay(userPos) || !p || !p.lat) return null;
   const m = Math.hypot((p.lng - userPos.lng) * 108900, (p.lat - userPos.lat) * 110600) * 1.3; // 직선거리 × 1.3 (길 굴곡 보정)
@@ -280,7 +252,7 @@ function viewHome() {
     </div>
   </div>
   <div class="hdock${homeFull ? ' down' : ''}">
-    <div class="hctl"><button class="hfab" data-act="homeFit" aria-label="오늘 동선 보기">${svg('crosshair', 18, '#1C2B2E')}</button>
+    <div class="hctl"><button class="hfab" data-act="homeFit" aria-label="화이트비치로 돌아가기">${svg('crosshair', 18, '#1C2B2E')}</button>
       <button class="hbig" data-act="tab" data-tab="map">${svg('map', 16, G)}지도 탭</button></div>
   <div class="hsheet">
     <div class="hgrabzone"><div class="hgrab" aria-hidden="true"></div>
@@ -449,206 +421,13 @@ function makeICS() {
 /* ========= 장소 ========= */
 /* ========= 지도: 직접 그린 보라카이 지도 (기본) + Mapbox (선택) ========= */
 const GEO = { minLng: 121.900, maxLng: 121.955, minLat: 11.934, maxLat: 12.004 };
-const KY = 10000, KX = KY * Math.cos(11.97 * Math.PI / 180);
-const MW = (GEO.maxLng - GEO.minLng) * KX, MH = (GEO.maxLat - GEO.minLat) * KY;
-const proj = (lng, lat) => [(lng - GEO.minLng) * KX, (GEO.maxLat - lat) * KY];
-const unproj = (x, y) => ({ lng: x / KX + GEO.minLng, lat: GEO.maxLat - y / KY });
 const G = '#17806D', GL = '#2DAA8A';
-const LABELS = [
-  { t:'Station 2', lng:121.9290, lat:11.9583, big:true },
-  { t:'Station 1', lng:121.9250, lat:11.9690 },
-  { t:'Station 3', lng:121.9335, lat:11.9515 },
-  { t:'Cagban 선착장', lng:121.9405, lat:11.9375 }
-];
 const PALM = '<path d="M0 0 Q2.5 -9 0.5 -19" stroke="#A47447" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M0.5 -19 q-8 -5 -14 1 q7 -2 14 -1z M0.5 -19 q8 -5 14 1 q-7 -2 -14 -1z M0.5 -19 q-3 -8 -10 -10 q5 3 10 10z M0.5 -19 q3 -8 10 -10 q-5 3 -10 10z M0.5 -19 q0 -7 -2 -11 q3 4 2 11z" fill="#3DAE68"/>';
 const UMB = '<path d="M0 0 V-11" stroke="#8A6A48" stroke-width="1.5"/><path d="M-9 -10 Q0 -20 9 -10 Z" fill="#2BB0C6"/><path d="M-3 -10 Q0 -19 3 -10 Z" fill="#F7D774"/>';
-let view = null, userPos = null, geoWatch = null, mapHeaderBuilt = false;
-const ptrs = new Map(); let drag = null, pressTimer = null;
-
+let userPos = null, geoWatch = null, mapHeaderBuilt = false;
 function headerH() { const t = $('#mapTop'); return t ? t.offsetTop + t.offsetHeight : 110; }
 function bottomH() { const c = $('#mapCard'); return c && c.offsetHeight ? c.offsetHeight + 24 : 110; }
-function fitView() {
-  const el = $('#svgmap'), cw = el.clientWidth, ch = el.clientHeight, top = headerH() + 6, bottom = bottomH();
-  const fk = Math.min(cw / MW, (ch - top - bottom) / MH) * 1.05, k = fk * 2.1;
-  const [cx, cy] = proj(121.9235, 11.9650); // 화이트비치 Station 1~2 중심으로 시작
-  view = { k, min: fk * 0.8, max: fk * 8, tx: cw / 2 - cx * k, ty: top + (ch - top - bottom) / 2 - cy * k };
-}
-const toScreen = (lng, lat) => { const [x, y] = proj(lng, lat); return [x * view.k + view.tx, y * view.k + view.ty]; };
-const pts = (arr) => arr.map(([lng, lat]) => proj(lng, lat).map((v) => v.toFixed(1)).join(',')).join(' ');
-const spts = (arr) => arr.map(([lng, lat]) => toScreen(lng, lat).map((v) => v.toFixed(1)).join(',')).join(' ');
-function lerpLine(line, n) {
-  const out = [];
-  for (let i = 0; i < n; i++) {
-    const t = (i + 0.5) / n * (line.length - 1), j = Math.floor(t), f = t - j, a = line[j], b = line[Math.min(j + 1, line.length - 1)];
-    out.push([a[0] + (b[0] - a[0]) * f - 0.0006, a[1] + (b[1] - a[1]) * f - 0.0002]);
-  }
-  return out;
-}
 const routeStops = () => sortTodos(todosOf(S.ui.day).slice()).map((t) => placeById(t.placeId)).filter((p) => p && p.lat);
-
-// 섬·해변·도로는 지도 좌표로 한 번만 만들어 두고, 확대 정도에 따라 골목 표시만 바꿈
-let _mapBase = null;
-function mapBaseSvg(k) {
-  if (!_mapBase) {
-    const line = (g) => pts(g);
-    _mapBase = {
-      land: `<polygon points="${pts(ISLAND)}" fill="#A9DCE2" stroke="#A9DCE2" stroke-width="22" stroke-linejoin="round"/>
-        <polygon points="${pts(ISLAND)}" fill="#F3F1EA" stroke="#E2DCCB" stroke-width="1" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
-        <polygon points="${pts(ISLAND)}" fill="none" stroke="#E4F2E4" stroke-width="10" stroke-linejoin="round" opacity=".7"/>
-        ${BEACHES.map((bch) => `<polygon points="${pts(bch)}" fill="#F4E3B4" stroke="#F4E3B4" stroke-width="6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>`).join('')}`,
-      minor: ROADS[1].map((g) => `<polyline points="${line(g)}" vector-effect="non-scaling-stroke"/>`).join(''),
-      path: ROADS[2].map((g) => `<polyline points="${line(g)}" vector-effect="non-scaling-stroke"/>`).join(''),
-      main: ROADS[0].map((g) => `<polyline points="${line(g)}" vector-effect="non-scaling-stroke"/>`).join('')
-    };
-  }
-  const zf = k / (view.min / 0.8), mw = zf > 2.2 ? 3 : zf > 1.4 ? 2.2 : 1.4, Mw = zf > 2.2 ? 6 : 4.5;
-  return _mapBase.land
-    + `<g fill="none" stroke-linecap="round" stroke-linejoin="round">`
-    + `<g stroke="#DDD4C1" stroke-width="${mw + 1.6}">${_mapBase.minor}</g>`
-    + `<g stroke="#D3C7AC" stroke-width="${Mw + 2}">${_mapBase.main}</g>`
-    + `<g stroke="#FFFFFF" stroke-width="${mw}">${_mapBase.minor}</g>`
-    + `<g stroke="#C9BB9C" stroke-width="1.4" stroke-dasharray="3 3">${_mapBase.path}</g>`
-    + `<g stroke="#FFFFFF" stroke-width="${Mw}">${_mapBase.main}</g></g>`;
-}
-const baseTier = (k) => { const zf = k / (view.min / 0.8); return zf > 2.2 ? 2 : zf > 1.4 ? 1 : 0; };
-let svgDom = null, drawRaf = 0;
-// 손가락으로 움직이는 동안에는 한 프레임에 한 번만 다시 그림
-function requestDraw() { if (!drawRaf) drawRaf = requestAnimationFrame(() => { drawRaf = 0; drawSvgMap(); }); }
-function drawSvgMap() {
-  if (drawRaf) { cancelAnimationFrame(drawRaf); drawRaf = 0; }
-  const el = $('#svgmap'); if (!el.clientWidth) return;
-  if (!view) fitView();
-  const k = view.k, f = S.ui.placeFilter, zoomed = k > view.min / 0.8 * 1.4;
-  const stops = routeStops(), stopIds = stops.map((p) => p.id), sel = S.ui.selPlace;
-  const track = (S.track && S.track[S.ui.day]) || [];
-  const others = S.places.filter((p) => p.lat && !stopIds.includes(p.id) && (f === 'all' || p.cat === f)).map((p) => {
-    const [x, y] = toScreen(p.lng, p.lat), on = p.id === sel;
-    return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})" data-act="selPlace" data-id="${p.id}" role="button" aria-label="${esc(p.name)}" style="cursor:pointer">
-      <circle r="22" fill="transparent"/>${on ? `<circle r="17" fill="${GL}" opacity=".25"/>` : ''}
-      <circle r="12" fill="#fff" stroke="${on ? G : '#9CC9BF'}" stroke-width="2"/>
-      <g transform="translate(-7,-7)">${svg(CAT_ICON[p.cat] || 'pin', 14, G, 2.2)}</g>
-      ${zoomed || on ? `<text class="plabel" pointer-events="none" y="26" text-anchor="middle">${esc(p.name)}</text>` : ''}</g>`;
-  }).join('');
-  const nums = stops.map((p, i) => { const [x, y] = toScreen(p.lng, p.lat), on = p.id === sel;
-    return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})" data-act="selPlace" data-id="${p.id}" role="button" aria-label="${i + 1}번 ${esc(p.name)}" style="cursor:pointer">
-      <path d="M0 0 C-5 -7 -14 -12 -14 -22 A14 14 0 1 1 14 -22 C14 -12 5 -7 0 0 Z" fill="${on ? G : GL}" stroke="#fff" stroke-width="2.5"/>
-      <text y="-17" text-anchor="middle" style="font:700 14px 'Space Grotesk',sans-serif;fill:#fff">${i + 1}</text>
-      ${zoomed || on ? `<text class="plabel" pointer-events="none" y="16" text-anchor="middle">${esc(p.name)}</text>` : ''}</g>`; }).join('');
-  let me = '';
-  if (userPos) { const [x, y] = toScreen(userPos.lng, userPos.lat);
-    me = `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})" pointer-events="none">
-      <circle r="26" fill="rgba(26,115,232,.16)"/><circle r="9" fill="#1A73E8" stroke="#fff" stroke-width="3.5"/>
-      <g transform="translate(0,-34)"><rect x="-34" y="-15" width="68" height="28" rx="14" fill="#1A73E8"/><path d="M-6 12 L0 19 L6 12 Z" fill="#1A73E8"/>
-      <text y="5" text-anchor="middle" style="font:700 13px 'Noto Sans KR',sans-serif;fill:#fff">내 위치</text></g></g>`; }
-  const W = el.clientWidth, H = el.clientHeight;
-  if (!svgDom || svgDom.root.parentNode !== el || svgDom.w !== W || svgDom.h !== H) {
-    el.innerHTML = `<svg width="${W}" height="${H}"><rect width="100%" height="100%" fill="#BFE6EA"/><g class="mbase"></g><g class="mover"></g></svg>`;
-    const root = el.firstChild; svgDom = { root, w: W, h: H, base: root.querySelector('.mbase'), over: root.querySelector('.mover'), tier: -1 };
-  }
-  const tier = baseTier(k);
-  if (svgDom.tier !== tier) { svgDom.base.innerHTML = mapBaseSvg(k); svgDom.tier = tier; }
-  svgDom.base.setAttribute('transform', `translate(${view.tx.toFixed(1)},${view.ty.toFixed(1)}) scale(${k.toFixed(4)})`);
-  svgDom.over.innerHTML = `
-    ${PALMS.map(([lng, lat]) => { const [x, y] = toScreen(lng, lat); return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})" pointer-events="none">${PALM}</g>`; }).join('')}
-    ${UMBS.map(([lng, lat]) => { const [x, y] = toScreen(lng, lat); return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})" pointer-events="none">${UMB}</g>`; }).join('')}
-    ${(() => { const [x, y] = toScreen(121.9185, 11.9590); return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" style="font:italic 700 ${Math.round(16 + 6 * Math.min(1, (k / (view.min / 0.8) - 1)))}px Georgia,'Noto Sans KR',serif;fill:#1C3D44" pointer-events="none"><tspan x="${x.toFixed(1)}">White</tspan><tspan x="${x.toFixed(1)}" dy="1.15em">Beach</tspan></text>`; })()}
-    ${LABELS.filter((l) => l.big || zoomed).map((l) => { const [x, y] = toScreen(l.lng, l.lat); return `<text class="${l.big ? 'blabel' : 'slabel'}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" pointer-events="none">${l.t}</text>`; }).join('')}
-    ${track.length > 1 ? `<polyline points="${spts(track)}" fill="none" stroke="${G}" stroke-width="4" stroke-dasharray="1 8" stroke-linecap="round" pointer-events="none"/>` : ''}
-    ${stops.length > 1 && !NAV ? `<polyline points="${spts(stops.map((p) => [p.lng, p.lat]))}" fill="none" stroke="${GL}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>` : ''}
-    ${NAV ? `<polyline points="${spts(NAV.geo)}" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/><polyline points="${spts(NAV.geo)}" fill="none" stroke="#1A73E8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-      ${!NAV.live ? (() => { const [ox, oy] = toScreen(NAV.origin.lng, NAV.origin.lat); return `<circle cx="${ox}" cy="${oy}" r="8" fill="#fff" stroke="#1A73E8" stroke-width="4" pointer-events="none"/>`; })() : ''}` : ''}
-    ${others}${nums}${me}`;
-}
-function zoomAt(factor, cx, cy) {
-  const nk = Math.max(view.min, Math.min(view.max, view.k * factor)), r = nk / view.k;
-  view.tx = cx - (cx - view.tx) * r; view.ty = cy - (cy - view.ty) * r; view.k = nk;
-  clampView(); requestDraw();
-}
-function clampView() {
-  const el = $('#svgmap'), cw = el.clientWidth, ch = el.clientHeight, w = MW * view.k, h = MH * view.k, m = 80;
-  view.tx = Math.min(cw - m, Math.max(m - w, view.tx));
-  view.ty = Math.min(ch - m, Math.max(m - h, view.ty));
-}
-(function bindSvgMap() {
-  const el = $('#svgmap');
-  const rel = (x, y) => { const r = el.getBoundingClientRect(); return [x - r.left, y - r.top]; };
-  const startGesture = () => {
-    // 손가락 수가 바뀔 때마다 기준점을 새로 잡아서 화면이 튀지 않게 함
-    if (ptrs.size >= 2) { drag.pinch = pinchDist(); drag.c = pinchCenter(); drag.moved = true; clearTimeout(pressTimer); }
-  };
-  el.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (ptrs.size === 1) drag = { moved: false, sx: e.clientX, sy: e.clientY, pinch: null, c: null, long: false, onPin: !!e.target.closest('[data-act]') };
-    else { if (!drag) drag = { moved: true, sx: e.clientX, sy: e.clientY, long: false }; startGesture(); try { el.setPointerCapture(e.pointerId); } catch (er) {} }
-    clearTimeout(pressTimer);
-    if (ptrs.size === 1 && !drag.onPin) {
-      pressTimer = setTimeout(() => {
-        if (!drag || drag.moved || ptrs.size !== 1) return;
-        drag.long = true;
-        const [px, py] = rel(drag.sx, drag.sy), x = (px - view.tx) / view.k, y = (py - view.ty) / view.k;
-        if (x >= 0 && y >= 0 && x <= MW && y <= MH) addPlaceForm(unproj(x, y));
-      }, 550);
-    }
-  });
-  el.addEventListener('pointermove', (e) => {
-    if (!ptrs.has(e.pointerId) || !view || !drag) return;
-    const prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 6) {
-      drag.moved = true; clearTimeout(pressTimer);
-      // 움직이기 시작하면 손가락을 지도에 묶어 둠 (핀 위에서 시작해도, 다시 그려져도 끊기지 않게)
-      for (const id of ptrs.keys()) { try { el.setPointerCapture(id); } catch (er) {} }
-    }
-    if (!drag.moved) return;
-    if (ptrs.size >= 2) {
-      const d = pinchDist(), c = pinchCenter();
-      if (drag.pinch && drag.c) {
-        const [cx, cy] = rel(c.x, c.y);
-        view.tx += c.x - drag.c.x; view.ty += c.y - drag.c.y; // 두 손가락으로 끌기
-        const nk = Math.max(view.min, Math.min(view.max, view.k * d / drag.pinch)), r = nk / view.k;
-        view.tx = cx - (cx - view.tx) * r; view.ty = cy - (cy - view.ty) * r; view.k = nk;
-        clampView(); requestDraw();
-      }
-      drag.pinch = d; drag.c = c;
-    } else {
-      view.tx += e.clientX - prev.x; view.ty += e.clientY - prev.y; clampView(); requestDraw();
-    }
-  });
-  const end = (e) => {
-    if (!ptrs.has(e.pointerId)) return;
-    clearTimeout(pressTimer);
-    const wasTap = drag && !drag.moved && !drag.long && ptrs.size === 1;
-    ptrs.delete(e.pointerId);
-    try { el.releasePointerCapture(e.pointerId); } catch (er) {}
-    if (ptrs.size >= 2) startGesture();
-    else if (ptrs.size === 1 && drag) { drag.pinch = null; drag.c = null; }
-    if (!ptrs.size) {
-      if (drag && drag.moved) { drag.justMoved = Date.now(); }
-      if (wasTap && e.type === 'pointerup' && !drag.onPin && S.ui.selPlace) { S.ui.selPlace = null; save(); drawSvgMap(); renderMapCard(); }
-    }
-  };
-  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end); el.addEventListener('lostpointercapture', (e) => { if (e.target === el) end(e); });
-  // 끌고 난 직후 손을 뗄 때 핀이 눌리는 것 막기
-  el.addEventListener('click', (e) => { if (drag && drag.justMoved && Date.now() - drag.justMoved < 350) { e.stopPropagation(); e.preventDefault(); } }, true);
-  let lastTap = 0, lastPtrType = 'mouse';
-  el.addEventListener('pointerdown', (e) => { lastPtrType = e.pointerType; }, true);
-  el.addEventListener('pointerup', (e) => { // 두 번 톡 = 확대 (아이폰은 dblclick이 안 옴)
-    if (e.pointerType !== 'touch' || (drag && drag.moved) || ptrs.size) return;
-    const now = Date.now();
-    if (now - lastTap < 300 && !e.target.closest('[data-act]')) { const [x, y] = rel(e.clientX, e.clientY); zoomAt(1.8, x, y); lastTap = 0; } else lastTap = now;
-  });
-  el.addEventListener('dblclick', (e) => { if (lastPtrType === 'touch') return; const [x, y] = rel(e.clientX, e.clientY); zoomAt(1.6, x, y); });
-  el.addEventListener('wheel', (e) => {
-    e.preventDefault(); if (!view) return;
-    const [x, y] = rel(e.clientX, e.clientY), dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-    zoomAt(Math.exp(-Math.max(-60, Math.min(60, dy)) * (e.ctrlKey ? 0.012 : 0.004)), x, y);
-  }, { passive: false });
-  // 아이폰 Safari가 지도 대신 화면 전체를 확대해 버리는 것 막기
-  ['gesturestart', 'gesturechange', 'gestureend'].forEach((ev) => document.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
-  window.addEventListener('resize', () => { if (S.ui.tab === 'map' && S.ui.mapMode !== 'mapbox' && view) { clampView(); drawSvgMap(); } });
-})();
-function pinchDist() { const [a, b] = [...ptrs.values()]; return Math.hypot(a.x - b.x, a.y - b.y); }
-function pinchCenter() { const [a, b] = [...ptrs.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
 const insideBoracay = (p) => p.lat > GEO.minLat && p.lat < GEO.maxLat && p.lng > GEO.minLng && p.lng < GEO.maxLng;
 function locate(silent) {
   if (!navigator.geolocation) { silent || toast('이 기기에서는 위치를 쓸 수 없어요'); return; }
@@ -708,35 +487,13 @@ function renderMapCats() {
   $('#mapCats').innerHTML = `<button class="mcat fav ${f === 'fav' ? 'on' : ''}" data-act="pfilter" data-f="${f === 'fav' ? 'all' : 'fav'}" aria-pressed="${f === 'fav'}">${svg('heart', 15, f === 'fav' ? '#fff' : '#E5484D', 2.4)}즐겨찾기 <span style="font-weight:500;opacity:.75">${favCount()}</span></button>${f === 'fav' ? `<button class="mcat" data-act="favSheet">${svg('list', 15, G)}목록</button>` : ''}` + MAP_CATS.map(([k, label, ic]) =>
     `<button class="mcat ${f === k ? 'on' : ''}" data-act="pfilter" data-f="${f === k ? 'all' : k}" aria-pressed="${f === k}">${svg(ic, 16, f === k ? '#fff' : G)}${label}</button>`).join('');
 }
-const routeOn = () => false; // 지도 탭의 동선 표시는 없앰 (홈 지도에서만 오늘 동선을 보여 줌)
-const trackOn = () => S.ui.showTrack !== false;
 function renderMapLegend() {
   $('#mapLegend').innerHTML = '';
   $('#mapLocate').innerHTML = `<button data-act="locate" aria-label="내 위치로">${svg('crosshair', 22, '#1C2B2E')}</button>`;
 }
-function routeSheet() {
-  const days = tripDays();
-  openSheet(`<h2 style="font-size:20px;margin-bottom:12px">지도에 표시할 동선</h2>
-    <div class="stack" style="gap:8px">${days.map((d) => { const n = sortTodos(todosOf(d).slice()).filter((x) => { const p = placeById(x.placeId); return p && p.lat; }).length, on = routeOn() && d === S.ui.day;
-      return `<button class="card row rday ${on ? 'on' : ''}" data-act="routeDay" data-day="${d}"><b class="num" style="width:34px">D${dayIndex(d)}</b><span style="flex:1;text-align:left">${fmtDate(d)}${d === currentDay() && todayStr() >= S.trip.start ? ' · 오늘' : ''}</span><span class="muted small">${n ? n + '곳' : '장소 없음'}</span>${on ? svg('check', 16, G, 3) : ''}</button>`; }).join('')}</div>
-    <div class="between" style="margin-top:14px;gap:10px">
-      <button class="btn ghost" data-act="trackToggle" style="flex:1;height:44px">${trackOn() ? '이동 기록 숨기기' : '이동 기록 보기'}</button>
-      ${routeOn() ? '<button class="btn ghost" data-act="routeOff" style="flex:1;height:44px">동선 숨기기</button>' : ''}
-    </div>`);
-}
-function fitRoute() {
-  const pts = routeStops().map((p) => [p.lng, p.lat]);
-  if (!pts.length) return;
-  whenMapReady(() => {
-    if (pts.length === 1) { map.easeTo({ center: pts[0], zoom: Math.max(map.getZoom(), 15.5), padding: { top: headerH(), bottom: bottomH(), left: 0, right: 0 } }); return; }
-    const xs = pts.map((c) => c[0]), ys = pts.map((c) => c[1]);
-    map.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: { top: headerH() + 30, bottom: bottomH() + 40, left: 50, right: 50 }, maxZoom: 16.5 });
-  });
-}
 function placeMapFloat() {
   const card = $('#mapCard'), b = (card.offsetHeight ? card.offsetHeight + 22 : 22);
   $('#mapLegend').style.bottom = b + 'px'; $('#mapLocate').style.bottom = b + 'px';
-  const oa = $('.osmattr'); if (oa) oa.style.bottom = (b - 16) + 'px';
   $('#mapView').style.setProperty('--mfloat', (b - 14) + 'px');
 }
 function renderMapCard() { renderMapCardInner(); placeMapFloat(); }
@@ -750,12 +507,7 @@ function renderMapCardInner() {
       <button class="btn ghost" data-act="cancelPin" style="height:38px">취소</button></div>`; return; }
   if (POI) { card.innerHTML = poiCard(); const slot = $('#poiGSlot'); if (slot && POI.gel) slot.appendChild(POI.gel); return; }
   const p = placeById(S.ui.selPlace);
-  if (!p) {
-    const st = routeOn() ? routeStops() : [];
-    card.innerHTML = st.length ? `<div class="rstrip">${st.map((q, i) => `<button data-act="selPlace" data-id="${q.id}" class="rchip"><i>${i + 1}</i>${esc(q.name)}</button>`).join('')}</div>` : '';
-    return;
-  }
-  if (false) { card.innerHTML = `<div class="mhint">지도를 길게 누르면 장소를 추가할 수 있어요</div>`; return; }
+  if (!p) { card.innerHTML = ''; return; }
   const inPlan = routeStops().some((x) => x.id === p.id);
   if (GOOGLE_KEY && !gAuthFail && p.lat) {
     const g = placeG(p);
@@ -799,8 +551,6 @@ function renderMap() {
   renderMapCats(); renderMapLegend(); renderMapCard();
   $('#mapbox').style.display = 'block';
   $('#mapbox').style.top = '0';
-  $('#svgmap').style.display = 'none';
-  $('.osmattr').style.display = 'none';
   $('#mapLocate').style.display = 'block';
   showMapFail(mapState === 'failed');
   if (mapState === 'idle') loadMapbox();
@@ -861,6 +611,7 @@ function initMap() {
     map.addLayer({ id: 'nav', type: 'line', source: 'nav', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1A73E8', 'line-width': 5 } });
     addDecorMarkers();
     setupPoiTap();
+    hideFerries(map);
     const zc = () => map.getContainer().classList.toggle('z16', map.getZoom() >= 16); map.on('zoom', zc); zc();
     refreshMap();
     showMapFail(false);
@@ -942,11 +693,11 @@ function refreshMap() {
   if (S.ui.tab === 'map') { renderMapCard(); renderMapLegend(); }
   if (mapState !== 'ready') return;
   markers.forEach((m) => m.remove()); numMarkers.forEach((m) => m.remove()); markers = []; numMarkers = [];
-  const f = S.ui.placeFilter, stops = routeOn() ? routeStops() : [], ids = stops.map((p) => p.id);
+  const f = S.ui.placeFilter, stops = [], ids = stops.map((p) => p.id);
   // 지도에는 그날 일정(번호 핀)만 크게 표시. 다른 저장 장소는 맛집·카페 버튼을 눌렀을 때나 고른 장소만 보여 줌
   S.places.filter((p) => p.lat && !ids.includes(p.id) && ((f === 'fav' ? p.fav : f !== 'all' ? p.cat === f : false) || p.id === S.ui.selPlace)).forEach((p) => markers.push(mbPin(p, 0, p.id === S.ui.selPlace)));
   stops.forEach((p, i) => numMarkers.push(mbPin(p, i + 1, p.id === S.ui.selPlace)));
-  const track = (trackOn() && S.track && S.track[S.ui.day]) || [];
+  const track = (S.track && S.track[S.ui.day]) || [];
   map.getSource('track').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: track.length > 1 ? track : [] } });
   map.getSource('route').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: NAV ? [] : stops.map((p) => [p.lng, p.lat]) } });
   map.getSource('nav').setData(NAV ? { type: 'Feature', geometry: { type: 'LineString', coordinates: NAV.geo } } : { type: 'FeatureCollection', features: [] });
@@ -964,6 +715,15 @@ function poiCat(cls, maki) {
   if (/beach/.test(maki || '')) return 'beach';
   if (/park|landmark|monument|attraction|viewpoint|museum/.test((cls || '') + (maki || ''))) return 'spot';
   return 'etc';
+}
+// 바다 위 뱃길(페리 노선)을 바다 색으로 덮어서 안 보이게
+function hideFerries(m) {
+  try {
+    let water = '#BFE6EA'; try { water = m.getConfigProperty('basemap', 'colorWater') || water; } catch (e) {}
+    m.setConfigProperty('basemap', 'showTransitLabels', false);
+    if (!m.getSource('streets8')) m.addSource('streets8', { type: 'vector', url: 'mapbox://mapbox.mapbox-streets-v8' });
+    if (!m.getLayer('ferry-mask')) m.addLayer({ id: 'ferry-mask', type: 'line', source: 'streets8', 'source-layer': 'road', filter: ['match', ['get', 'class'], ['ferry', 'ferry_auto'], true, false], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': typeof water === 'string' ? water : '#BFE6EA', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 3, 14, 5, 18, 9] }, slot: 'middle' });
+  } catch (e) { console.warn('ferry', e); }
 }
 function setupPoiTap() {
   if (!map.addInteraction) return;
@@ -1064,31 +824,6 @@ function gFullSheet(id, title) {
   }).catch(() => { const slot = $('#gFullSlot'); if (slot) slot.innerHTML = '<div class="poig-msg">Google 정보를 불러오지 못했어요</div>'; });
 }
 function poiFullSheet() { if (POI && POI.gid) gFullSheet(POI.gid, POI.gname || POI.name); }
-function poiOtherSheet(own) {
-  const p = own || POI; if (!p) return;
-  openSheet(`<h2 style="font-size:20px">근처 ${CATS[p.cat] && p.cat !== 'etc' ? CATS[p.cat] : '가게'}</h2><p class="small muted" style="margin:4px 0 10px">맞는 곳을 누르면 그 가게로 바뀌어요</p><div id="gOtherSlot" class="gfull"><div class="poig-msg">찾는 중…</div></div>`);
-  loadGoogle().then(() => {
-    const slot = $('#gOtherSlot'); if (!slot) return;
-    const el = document.createElement('gmp-place-search'); el.setAttribute('selectable', '');
-    el.innerHTML = `<template slot="details-item"><gmp-place-media></gmp-place-media><gmp-place-name></gmp-place-name><gmp-place-rating></gmp-place-rating><gmp-place-type></gmp-place-type></template><gmp-place-attribution light-scheme-color="gray" dark-scheme-color="white"></gmp-place-attribution>`;
-    const req = document.createElement('gmp-place-nearby-search-request');
-    req.setAttribute('max-result-count', '10');
-    req.locationRestriction = { center: { lat: p.lat, lng: p.lng }, radius: 200 };
-    if (POI_GTYPE[p.cat]) req.includedTypes = POI_GTYPE[p.cat];
-    req.rankPreference = 'DISTANCE';
-    el.prepend(req);
-    el.addEventListener('gmp-select', (ev) => {
-      const pl = ev.place; if (!pl) return;
-      if (own) { own.gid = pl.id; delete GOWN[own.id]; save(); closeSheet(); renderMapCard(); return; }
-      if (POI !== p) return;
-      if (pl.location) { p.lat = pl.location.lat(); p.lng = pl.location.lng(); poiMarker && poiMarker.setLngLat([p.lng, p.lat]); }
-      p.guess = false; try { p.gname = pl.displayName || p.gname; } catch (e) {}
-      setPoiGid(p, pl.id); closeSheet(); renderMapCard();
-    });
-    el.addEventListener('gmp-error', () => { slot.innerHTML = '<div class="poig-msg">근처 가게를 불러오지 못했어요</div>'; });
-    slot.replaceChildren(el);
-  }).catch(() => { const slot = $('#gOtherSlot'); if (slot) slot.innerHTML = '<div class="poig-msg">Google 정보를 불러오지 못했어요</div>'; });
-}
 // 내 장소(일정에 넣은 곳)도 Google 장소와 연결: 이름+위치로 찾아서 place ID만 저장
 const GOWN = {};
 const KO_EN = [['해변', 'Beach'], ['전망대', 'Viewpoint'], ['리조트', 'Resort'], ['호텔', 'Hotel'], ['선착장', 'Port'], ['식당', 'Restaurant']];
@@ -1125,8 +860,10 @@ async function resolveFavs() {
   favResolving = true;
   try {
     const { Place } = await loadGoogle();
-    for (const p of need) {
-      try { const pl = new Place({ id: p.gid }); await pl.fetchFields({ fields: ['location'] }); if (pl.location) { p.lat = +pl.location.lat().toFixed(6); p.lng = +pl.location.lng().toFixed(6); p.gAt = Date.now(); } } catch (e) {}
+    for (let i = 0; i < need.length; i += 8) { // 8곳씩 동시에 받아서 빨리 채움
+      await Promise.all(need.slice(i, i + 8).map(async (p) => {
+        try { const pl = new Place({ id: p.gid }); await pl.fetchFields({ fields: ['location'] }); if (pl.location) { p.lat = +pl.location.lat().toFixed(6); p.lng = +pl.location.lng().toFixed(6); p.gAt = Date.now(); } } catch (e) {}
+      }));
     }
     save();
     if (S.ui.tab === 'map') refreshMap(); else if (S.ui.tab === 'home') updateHomeMap();
@@ -1859,7 +1596,6 @@ document.addEventListener('click', (e) => {
       else { S.ui.pinTodo = id; S.ui.selPlace = null; closeSheet(); S.ui.tab = 'map'; save(); render(); toast('지도를 길게 눌러 위치를 정해 주세요'); }
       break;
     }
-    case 'dayOnMap': { S.ui.day = b.dataset.day; S.ui.placeFilter = 'all'; const st = sortTodos(todosOf(S.ui.day).slice()).map((x) => placeById(x.placeId)).find((pp) => pp && pp.lat); if (st) openOnMap(st, true); break; }
     case 'placeOnMap': openOnMap(placeById(id)); break;
     case 'cancelPin': delete S.ui.pinTodo; save(); renderMapCard(); break;
     case 'newPlace': placeForm(null, null); break;
@@ -2032,15 +1768,6 @@ async function startNav(dest, origin, live) {
       <a class="btn" href="${gDir(dest)}" target="_blank" rel="noopener" style="text-decoration:none;width:100%">구글맵으로 길안내 ↗</a>`);
   }
 }
-function fitPoints(coords) {
-  const el = $('#svgmap'); if (!view || !el.clientWidth) return;
-  const ps = coords.map((c) => proj(c[0], c[1])), xs = ps.map((p) => p[0]), ys = ps.map((p) => p[1]);
-  const top = headerH() + 30, availH = el.clientHeight - top - bottomH() - 30, bw = Math.max(...xs) - Math.min(...xs) + 1, bh = Math.max(...ys) - Math.min(...ys) + 1;
-  view.k = Math.max(view.min, Math.min(view.max, Math.min((el.clientWidth - 100) / bw, availH / bh)));
-  view.tx = el.clientWidth / 2 - (Math.max(...xs) + Math.min(...xs)) / 2 * view.k;
-  view.ty = top + availH / 2 - (Math.max(...ys) + Math.min(...ys)) / 2 * view.k;
-  clampView(); drawSvgMap();
-}
 function fitNav() {
   if (!NAV) return;
   if (map && mapState === 'ready') {
@@ -2048,13 +1775,6 @@ function fitNav() {
     map.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: { top: headerH() + 20, bottom: bottomH() + 20, left: 40, right: 40 } });
     refreshMap(); return;
   }
-  const el = $('#svgmap'); if (!view || !el.clientWidth) return;
-  const ps = NAV.geo.map((c) => proj(c[0], c[1])), xs = ps.map((p) => p[0]), ys = ps.map((p) => p[1]);
-  const top = headerH() + 30, availH = el.clientHeight - top - bottomH() - 30, bw = Math.max(...xs) - Math.min(...xs) + 1, bh = Math.max(...ys) - Math.min(...ys) + 1;
-  view.k = Math.max(view.min, Math.min(view.max, Math.min((el.clientWidth - 80) / bw, availH / bh)));
-  view.tx = el.clientWidth / 2 - (Math.max(...xs) + Math.min(...xs)) / 2 * view.k;
-  view.ty = top + availH / 2 - (Math.max(...ys) + Math.min(...ys)) / 2 * view.k;
-  clampView(); drawSvgMap();
 }
 function navUpdate() {
   if (!NAV || !NAV.live || !userPos) return;
@@ -2220,6 +1940,7 @@ function mountHomeMap() {
         m.addInteraction('home-poi-in', { type: 'mouseenter', target: { featuresetId: 'poi', importId: 'basemap' }, handler: () => { m.getCanvas().style.cursor = 'pointer'; } });
         m.addInteraction('home-poi-out', { type: 'mouseleave', target: { featuresetId: 'poi', importId: 'basemap' }, handler: () => { m.getCanvas().style.cursor = ''; } });
       } catch (e) {}
+      hideFerries(m);
       updateHomeMap();
       m.once('idle', () => { if (homeMbEl) homeMbEl.style.opacity = '1'; const o = document.querySelector('.hosm'); if (o) o.style.display = 'none'; });
     });
@@ -2230,14 +1951,8 @@ function mountHomeMap() {
 function updateHomeMap() {
   if (!homeMap || homeMbState !== 'ready') return;
   const day = currentDay();
-  const stops = sortTodos(todosOf(day).slice()).map((x) => placeById(x.placeId)).filter((p) => p && p.lat);
+  const stops = [];
   homeMarkers.forEach((mk) => mk.remove()); homeMarkers = [];
-  stops.forEach((p, i) => {
-    const el = document.createElement('div');
-    el.innerHTML = `<svg width="28" height="35" viewBox="-14 -34 28 36" aria-hidden="true"><path d="M0 0 C-5 -7 -13 -11 -13 -20 A13 13 0 1 1 13 -20 C13 -11 5 -7 0 0 Z" fill="${i === 0 ? G : GL}" stroke="#fff" stroke-width="2.5"/><text y="-15" text-anchor="middle" style="font:700 13px 'Space Grotesk',sans-serif;fill:#fff">${i + 1}</text></svg>`;
-    el.style.cursor = 'pointer'; el.addEventListener('click', (ev) => { ev.stopPropagation(); placeSheet(p); });
-    homeMarkers.push(new mapboxgl.Marker({ element: el, anchor: 'bottom' }).setLngLat([p.lng, p.lat]).addTo(homeMap));
-  });
   if (userPos && insideBoracay(userPos)) {
     const el = document.createElement('div');
     el.innerHTML = '<svg width="40" height="40" viewBox="-20 -20 40 40" aria-hidden="true"><circle r="18" fill="rgba(26,115,232,.18)"/><circle r="7" fill="#1A73E8" stroke="#fff" stroke-width="3"/></svg>';
@@ -2277,11 +1992,9 @@ document.addEventListener('click', (e) => {
     case 'homeCollapse': setHomeFull(true); break;
     case 'homeRetry': dropHomeMap(); homeMbState = 'idle'; rerender(); break;
     case 'poiFull': poiFullSheet(); break;
-    case 'poiOther': poiOtherSheet(); break;
     case 'poiNav': if (POI) navTo({ id: 'poi', name: POI.name || CATS[POI.cat], lat: POI.lat, lng: POI.lng }); break;
     case 'poiAdd': poiAdd(); break;
     case 'gFull': { const p = placeById(id); if (p) ensureGid(p).then((gid) => gid ? gFullSheet(gid, p.name) : toast('Google에서 이 장소를 찾지 못했어요')); break; }
-    case 'gOther': { const p = placeById(id); if (p) poiOtherSheet(p); break; }
     case 'homeDay': S.ui.day = b.dataset.day; S.ui.tab = 'todo'; rerender(); break;
     case 'pickDay': S.ui.day = b.dataset.day; rerender(); break;
     case 'mapDay': S.ui.day = b.dataset.day; save(); renderMap(); refreshMap(); break;
@@ -2298,12 +2011,7 @@ document.addEventListener('click', (e) => {
     case 'pfilter': S.ui.placeFilter = b.dataset.f; S.ui.selPlace = null; if (POI) closePoi(true); save(); renderMapCats(); refreshMap(); if (b.dataset.f !== 'all') fitFiltered(); break;
     case 'selPlace': S.ui.selPlace = id; save(); refreshMap(); break;
     case 'searchPick': { const p = placeById(id); S.ui.selPlace = id; if (p.cat && S.ui.placeFilter !== 'all' && S.ui.placeFilter !== p.cat) S.ui.placeFilter = 'all'; $('#placeSearch').value = ''; $('#searchResults').style.display = 'none'; save(); renderMap(); if (p.lat && view) centerOn(p); break; }
-    case 'routeSheet': routeSheet(); break;
-    case 'routeDay': S.ui.day = b.dataset.day; S.ui.showRoute = true; S.ui.selPlace = null; if (POI) closePoi(true); save(); closeSheet(); refreshMap(); fitRoute(); break;
-    case 'routeOff': S.ui.showRoute = false; S.ui.selPlace = null; save(); closeSheet(); refreshMap(); break;
-    case 'trackToggle': S.ui.showTrack = !trackOn(); save(); closeSheet(); refreshMap(); toast(trackOn() ? '이동 기록을 보여 줘요' : '이동 기록을 숨겼어요'); break;
     case 'selClear': S.ui.selPlace = null; save(); refreshMap(); break;
-    case 'mapNextDay': { const ds = tripDays(), i = ds.indexOf(S.ui.day); S.ui.day = ds[(i + 1) % ds.length]; S.ui.selPlace = null; save(); refreshMap(); toast(`D${dayIndex(S.ui.day)} ${fmtDate(S.ui.day)} 동선`); break; }
     case 'locate': locate(); break;
     case 'mapRetry': if (map) { try { map.remove(); } catch (er) {} map = null; } mapState = navigator.onLine === false ? 'failed' : 'idle'; renderMap(); if (mapState === 'failed') toast('아직 인터넷에 연결되지 않았어요'); break;
     case 'toggleAlarm': { const d = b.dataset.day; S.alarm.off[d] = !S.alarm.off[d]; delete S.alarm.fired[d]; rerender(); break; }
