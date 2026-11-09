@@ -204,3 +204,4 @@ html,body{overscroll-behavior:none}
 .favlab{display:none;font:600 11px 'Noto Sans KR',sans-serif;color:#B4232A;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;white-space:nowrap;margin-top:2px;max-width:120px;overflow:hidden;text-overflow:ellipsis}
 .z16 .favlab,.favpin.on .favlab{display:block}
 .hdock.down .hsheet>*:not(.hgrabzone){visibility:hidden}
+.mcat.fav.on{background:#E5484D;border-color:#E5484D;color:#fff}

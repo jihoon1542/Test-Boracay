@@ -705,7 +705,7 @@ function renderSearch() {
 }
 function renderMapCats() {
   const f = S.ui.placeFilter;
-  $('#mapCats').innerHTML = `<button class="mcat fav" data-act="favSheet">${svg('heart', 15, '#E5484D', 2.4)}즐겨찾기 <span class="muted" style="font-weight:500">${favCount()}</span></button>` + MAP_CATS.map(([k, label, ic]) =>
+  $('#mapCats').innerHTML = `<button class="mcat fav ${f === 'fav' ? 'on' : ''}" data-act="pfilter" data-f="${f === 'fav' ? 'all' : 'fav'}" aria-pressed="${f === 'fav'}">${svg('heart', 15, f === 'fav' ? '#fff' : '#E5484D', 2.4)}즐겨찾기 <span style="font-weight:500;opacity:.75">${favCount()}</span></button>${f === 'fav' ? `<button class="mcat" data-act="favSheet">${svg('list', 15, G)}목록</button>` : ''}` + MAP_CATS.map(([k, label, ic]) =>
     `<button class="mcat ${f === k ? 'on' : ''}" data-act="pfilter" data-f="${f === k ? 'all' : k}" aria-pressed="${f === k}">${svg(ic, 16, f === k ? '#fff' : G)}${label}</button>`).join('');
 }
 const routeOn = () => false; // 지도 탭의 동선 표시는 없앰 (홈 지도에서만 오늘 동선을 보여 줌)
@@ -767,7 +767,7 @@ function renderMapCardInner() {
         <button class="icon" data-act="selClear" aria-label="닫기" style="width:32px;height:32px;flex-shrink:0">${svg('close', 16, '#5B6B6E')}</button></div>
       ${g.state === 'ok' ? '<div id="ownGSlot" class="poig"></div>' : `<div class="poig-msg">${g.state === 'loading' ? 'Google 정보 찾는 중…' : g.state === 'none' ? 'Google에서 이 장소를 찾지 못했어요' : 'Google 정보를 불러오지 못했어요'}</div>`}
       <div class="between" style="gap:6px">
-        <span class="row" style="gap:12px"><button data-act="openPlace" data-id="${p.id}" class="poilink">메뉴·가격 ›</button>${g.state === 'ok' ? `<button data-act="gFull" data-id="${p.id}" class="poilink">리뷰·사진 ›</button>` : ''}<button data-act="gOther" data-id="${p.id}" class="poilink" style="color:#5B6B6E">${g.state === 'ok' ? '다른 곳?' : '근처 찾기'}</button></span>
+        <span class="row" style="gap:12px"><button data-act="openPlace" data-id="${p.id}" class="poilink">메뉴·가격 ›</button>${g.state === 'ok' ? `<button data-act="gFull" data-id="${p.id}" class="poilink">리뷰·사진 ›</button>` : ''}</span>
         <span class="row" style="gap:6px"><button data-act="navTo" data-id="${p.id}" aria-label="길찾기" class="mbtn" style="background:#EEF4FD;color:#1A73E8;padding:0 12px">${svg('nav', 16, '#1A73E8')}</button>
         <button data-act="placeToTodo" data-id="${p.id}" class="mbtn">${svg('plus', 16, '#fff', 2.6)}${inPlan ? '또 추가' : '일정에 추가'}</button></span>
       </div></div>`;
@@ -944,7 +944,7 @@ function refreshMap() {
   markers.forEach((m) => m.remove()); numMarkers.forEach((m) => m.remove()); markers = []; numMarkers = [];
   const f = S.ui.placeFilter, stops = routeOn() ? routeStops() : [], ids = stops.map((p) => p.id);
   // 지도에는 그날 일정(번호 핀)만 크게 표시. 다른 저장 장소는 맛집·카페 버튼을 눌렀을 때나 고른 장소만 보여 줌
-  S.places.filter((p) => p.lat && !ids.includes(p.id) && ((f === 'fav' ? p.fav : f !== 'all' ? p.cat === f : p.fav) || p.id === S.ui.selPlace)).forEach((p) => markers.push(mbPin(p, 0, p.id === S.ui.selPlace)));
+  S.places.filter((p) => p.lat && !ids.includes(p.id) && ((f === 'fav' ? p.fav : f !== 'all' ? p.cat === f : false) || p.id === S.ui.selPlace)).forEach((p) => markers.push(mbPin(p, 0, p.id === S.ui.selPlace)));
   stops.forEach((p, i) => numMarkers.push(mbPin(p, i + 1, p.id === S.ui.selPlace)));
   const track = (trackOn() && S.track && S.track[S.ui.day]) || [];
   map.getSource('track').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: track.length > 1 ? track : [] } });
@@ -1048,7 +1048,7 @@ function poiCard() {
       <button class="icon" data-act="poiClose" aria-label="닫기" style="width:32px;height:32px;flex-shrink:0">${svg('close', 16, '#5B6B6E')}</button></span></div>
     ${g}
     <div class="between" style="gap:6px">
-      <span class="row" style="gap:12px">${p.gstate === 'ok' ? `<button data-act="poiFull" class="poilink">리뷰·사진 ›</button>` : ''}${GOOGLE_KEY && p.gstate !== 'nokey' ? `<button data-act="poiOther" class="poilink" style="color:#5B6B6E">${p.gstate === 'ok' ? '다른 곳이에요' : '근처에서 찾기'}</button>` : ''}</span>
+      <span class="row" style="gap:12px">${p.gstate === 'ok' ? `<button data-act="poiFull" class="poilink">리뷰·사진 ›</button>` : ''}</span>
       <span class="row" style="gap:6px"><button data-act="poiNav" aria-label="길찾기" class="mbtn" style="background:#EEF4FD;color:#1A73E8;padding:0 12px">${svg('nav', 16, '#1A73E8')}</button>
       <button data-act="poiAdd" class="mbtn">${svg('plus', 16, '#fff', 2.6)}일정에 추가</button></span>
     </div></div>`;
@@ -1133,6 +1133,11 @@ async function resolveFavs() {
   } catch (e) {} finally { favResolving = false; }
 }
 setTimeout(resolveFavs, 1500);
+function fitFiltered() {
+  const f = S.ui.placeFilter, pts = S.places.filter((p) => p.lat && insideBoracay(p) && (f === 'fav' ? p.fav : p.cat === f)).map((p) => [p.lng, p.lat]);
+  if (pts.length < 2) return;
+  whenMapReady(() => { const xs = pts.map((c) => c[0]), ys = pts.map((c) => c[1]); map.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: { top: headerH() + 30, bottom: bottomH() + 40, left: 40, right: 40 }, maxZoom: 16 }); });
+}
 function favSheet() {
   const favs = S.places.filter((p) => p.fav);
   const order = ['food', 'cafe', 'shop', 'act', 'beach', 'spot', 'stay', 'etc'];
@@ -1196,6 +1201,15 @@ function ensureTrip(t) {
       else t.places.push({ id: 'g' + gid.slice(-10).replace(/[^A-Za-z0-9]/g, ''), name, cat, area: '', gid, fav: true, menu: [], memo: '', coordV: 2 });
     });
     t.favV = 1;
+  }
+  if (t.favV < 2) {
+    const seed = {}; FAV_SEED.forEach(([gid, , , mine]) => { seed[gid] = 1; if (mine) seed['@' + mine] = gid; });
+    t.places.forEach((p) => {
+      const sg = seed['@' + p.id] || (p.id.startsWith('g') && FAV_SEED.find((x) => 'g' + x[0].slice(-10).replace(/[^A-Za-z0-9]/g, '') === p.id) || [])[0];
+      if (sg) { if (p.gid !== sg) { p.gid = sg; delete p.gAt; } }
+      else if (p.gid) delete p.gid; // '다른 곳'으로 바꿨을 수 있는 연결은 지우고 이름으로 다시 찾음
+    });
+    t.favV = 2;
   }
   return t;
 }
@@ -2282,7 +2296,7 @@ document.addEventListener('click', (e) => {
     case 'delMenu': { const p = placeById(b.dataset.pid); p.menu = p.menu.filter((m) => m.id !== id); save(); placeSheet(p); break; }
     case 'placeToDay': { const p = placeById(id); todosOf(b.dataset.day).push({ id: uid(), time: '', title: p.name, placeId: p.id, done: false }); save(); closeSheet(); render(); refreshMap(); toast(`D${dayIndex(b.dataset.day)} 일정에 담았어요`); break; }
     case 'placeToTodo': todoForm(null, placeById(id)); break;
-    case 'pfilter': S.ui.placeFilter = b.dataset.f; save(); renderMapCats(); refreshMap(); break;
+    case 'pfilter': S.ui.placeFilter = b.dataset.f; save(); renderMapCats(); refreshMap(); if (b.dataset.f !== 'all') fitFiltered(); break;
     case 'selPlace': S.ui.selPlace = id; save(); refreshMap(); break;
     case 'searchPick': { const p = placeById(id); S.ui.selPlace = id; if (p.cat && S.ui.placeFilter !== 'all' && S.ui.placeFilter !== p.cat) S.ui.placeFilter = 'all'; $('#placeSearch').value = ''; $('#searchResults').style.display = 'none'; save(); renderMap(); if (p.lat && view) centerOn(p); break; }
     case 'routeSheet': routeSheet(); break;
