@@ -143,7 +143,7 @@ function seed() {
     todos: planTodos(start),
     places: P,
     tickets: planTickets(start),
-    ui: { tab:'home', day:start, placeFilter:'all', ticketFilter:'all' }
+    ui: { tab:'map', day:start, placeFilter:'all', ticketFilter:'all' }
   };
 }
 /* 이미지(티켓 캡처)는 IndexedDB에 보관, 안 되면 메모리에 */
@@ -192,7 +192,7 @@ function dayTabs(act, sel) {
 }
 
 /* ========= 탭 ========= */
-const TABS = [['home','홈','home'], ['map','지도','map'], ['todo','일정','list'], ['money','경비','coin'], ['more','더보기','grid']];
+const TABS = [['map','지도','map'], ['todo','일정','list'], ['money','경비','coin'], ['more','더보기','grid']];
 function renderTabs() {
   $('#tabs').innerHTML = TABS.map(([id, label, ic]) =>
     `<button data-act="tab" data-tab="${id}" ${S.ui.tab === id || (id === 'more' && SUBTABS.includes(S.ui.tab)) ? 'aria-current="page"' : ''}>${svg(ic, 24)}${label}</button>`).join('');
@@ -201,22 +201,17 @@ function render() {
   renderTabs();
   const isMap = S.ui.tab === 'map';
   $('#mapView').style.display = isMap ? 'block' : 'none';
-  document.body.classList.toggle('onmap', isMap || S.ui.tab === 'home');
+  document.body.classList.toggle('onmap', isMap);
   $('#view').style.display = isMap ? 'none' : 'block';
   if (isMap) { renderMap(); return; }
-  $('#view').style.background = S.ui.tab === 'home' ? '#fff' : '';
   if (render._last !== S.ui.tab) { render._last = S.ui.tab; requestAnimationFrame(() => { $('#view').scrollTop = 0; }); }
-  if (S.ui.tab === 'home' || S.ui.tab === 'sunset') maybeWeather();
-  $('#view').innerHTML = ({ home: viewHome, todo: viewTodo, sunset: viewSunset, tickets: viewTickets, money: viewMoney, more: viewMore, places: viewPlaces, check: viewCheck, journal: viewJournal }[S.ui.tab] || viewHome)();
+  if (S.ui.tab === 'sunset') maybeWeather();
+  $('#view').innerHTML = ({ todo: viewTodo, sunset: viewSunset, tickets: viewTickets, money: viewMoney, more: viewMore, places: viewPlaces, check: viewCheck, journal: viewJournal }[S.ui.tab] || viewTodo)();
   if (S.ui.tab === 'money') updateFx();
-  $('#view').classList.toggle('vhome', S.ui.tab === 'home');
-  document.body.classList.toggle('onmap', S.ui.tab === 'home');
-  if (S.ui.tab === 'home') mountHomeMap();
   hydrateImages();
 }
 
 /* ========= 홈 ========= */
-const MINT_BG = '#E6F3EF';
 const walkInfo = (p) => {
   if (!userPos || !insideBoracay(userPos) || !p || !p.lat) return null;
   const m = Math.hypot((p.lng - userPos.lng) * 108900, (p.lat - userPos.lat) * 110600) * 1.3; // 직선거리 × 1.3 (길 굴곡 보정)
@@ -241,56 +236,6 @@ function tripJourney(days, before, dleft) {
   }).join('');
   const cap = before ? `D-${dleft}` : cur >= n ? '끝' : `D${cur + 1}`;
   return `<button class="jcap" data-act="diagTap" style="border:0">${cap}</button><div class="jrow">${parts}</div>`;
-}
-function viewHome() {
-  const day = currentDay(), t = sunTimes(day), now = new Date(), days = tripDays();
-  const before = todayStr() < S.trip.start;
-  const dleft = Math.round((dateObj(S.trip.start) - dateObj(todayStr())) / 864e5);
-  const list = sortTodos(todosOf(day).slice()), done = list.filter((x) => x.done).length;
-  const stops = list.map((x) => placeById(x.placeId)).filter((p) => p && p.lat);
-  const nowHM = fmtTime(now);
-  const next = list.find((x) => !x.done && (before || todayStr() !== day || !x.time || x.time >= nowHM)) || list.find((x) => !x.done);
-  const np = next && placeById(next.placeId), wi = walkInfo(np);
-  const mins = Math.round((t.set - now) / 60000);
-  let frac = (now - t.rise) / (t.set - t.rise); frac = before ? 0 : Math.max(0, Math.min(1, frac));
-  const countdown = before ? `여행까지 D-${dleft}` : mins > 0 ? `${Math.floor(mins / 60)}시간 ${mins % 60}분 남음` : '오늘 해는 졌어요';
-  const tk = nextTicket();
-  const di = days.indexOf(day);
-  const st = settlement(), bud = +S.trip.budget || 0, todayKey = todayStr();
-  const todaySpend = S.expenses.filter((x) => x.date === todayKey).reduce((a, x) => a + (+x.amount || 0), 0);
-  const pct = bud ? Math.min(100, Math.round(st.total / bud * 100)) : 0;
-  const sunTxt = `${S.alarm.off[day] ? '알람 꺼짐' : `알람 ${fmtTime(new Date(t.set - S.alarm.offset * 60000))}`}${wxNowText() ? ' · ' + wxNowText() : ''}`;
-  return `
-  <div class="hmap">
-    <div class="hmapbg">${homeMbState === 'failed' ? `<button class="hfail" data-act="homeRetry">${svg('map', 18, G)}지도를 불러오지 못했어요 · 다시 시도</button>` : ''}</div>
-    <div class="hhead hjour">${tripJourney(days, before, dleft)}
-      <button class="icon" data-act="tab" data-tab="sunset" aria-label="선셋 알람" style="width:36px;height:36px;flex-shrink:0">${svg('bell', 20, '#1C2B2E')}</button></div>
-  </div>
-  <div class="hctl"><button class="hfab" data-act="homeFit" aria-label="화이트비치로 돌아가기">${svg('crosshair', 18, '#1C2B2E')}</button>
-    <button class="hbig" data-act="tab" data-tab="map">${svg('map', 16, G)}지도 탭</button></div>
-  <div class="hcards" id="hcards">
-    <div class="hcard">
-      <span class="hnext-ic">${svg(np ? (CAT_ICON[np.cat] || 'pin') : 'list', 20, '#fff')}</span>
-      ${next ? `<button data-act="${np ? 'openPlace' : 'todoInfo'}" data-id="${np ? np.id : next.id}" class="hnext-t">
-        <span style="font-size:12px;color:${G};font-weight:700">다음 일정${next.time ? ' · ' + esc(next.time) : ''} · D${di + 1} 할 일 ${done}/${list.length}</span>
-        <b>${esc(next.title)}</b>
-        <span class="muted" style="font-size:12px">${np ? esc(np.name) : '장소 없음'}${wi ? ` · 도보 ${wi.min}분` : ''}</span>
-      </button>
-      ${np && np.lat ? `<button class="hnav2" data-act="navTo" data-id="${np.id}" aria-label="길안내">${svg('nav', 20, '#1A73E8')}</button>` : ''}` : `<span class="muted" style="font-size:14px;flex:1">남은 일정이 없어요</span>`}
-    </div>
-    <button class="hcard hsunc" data-act="tab" data-tab="sunset">
-      <span class="hnext-ic" style="background:rgba(255,255,255,.18)">${svg('sun', 20, '#fff')}</span>
-      <span class="hnext-t"><span style="font-size:12px;opacity:.85">${before ? '첫날' : '오늘'} 일몰 · ${countdown}</span><b class="num" style="font-size:22px">${fmtTime(t.set)}</b><span style="font-size:12px;opacity:.9">${sunTxt}</span></span>
-      ${svg('chev', 18, '#fff')}
-    </button>
-    <button class="hcard hmoney" data-act="tab" data-tab="money">
-      <span class="hnext-ic" style="background:#E6F3EF">${svg('wallet', 20, G)}</span>
-      <span class="hnext-t"><span class="small muted">사용한 경비${bud ? ` · 예산의 ${pct}%` : ''}</span><b class="num" style="font-size:20px">${won(st.total)}</b>
-      ${bud ? `<span class="hbar2"><i style="width:${pct}%"></i></span>` : '<span class="small muted">예산을 정하면 남은 금액이 보여요</span>'}</span>
-      ${svg('chev', 18, '#9AA5A7')}
-    </button>
-  </div>
-  <div class="hdots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>`;
 }
 function nextTicket() {
   const t = todayStr();
@@ -405,7 +350,7 @@ const PALM = '<path d="M0 0 Q2.5 -9 0.5 -19" stroke="#A47447" stroke-width="2.4"
 const UMB = '<path d="M0 0 V-11" stroke="#8A6A48" stroke-width="1.5"/><path d="M-9 -10 Q0 -20 9 -10 Z" fill="#2BB0C6"/><path d="M-3 -10 Q0 -19 3 -10 Z" fill="#F7D774"/>';
 let userPos = null, geoWatch = null, mapHeaderBuilt = false;
 function headerH() { const t = $('#mapTop'); return t ? t.offsetTop + t.offsetHeight : 110; }
-function bottomH() { const c = $('#mapCard'); return c && c.offsetHeight ? c.offsetHeight + 24 : 110; }
+function bottomH() { return (sheetVis || 200) + 16; }
 const routeStops = () => sortTodos(todosOf(S.ui.day).slice()).map((t) => placeById(t.placeId)).filter((p) => p && p.lat);
 const insideBoracay = (p) => p.lat > GEO.minLat && p.lat < GEO.maxLat && p.lng > GEO.minLng && p.lng < GEO.maxLng;
 function locate(silent) {
@@ -436,57 +381,147 @@ function centerOn(p) {
 /* ----- 지도 탭 화면 (헤더 · 범례 · 장소 카드) ----- */
 const MAP_CATS = [['food', '맛집', 'food'], ['cafe', '카페', 'cafe'], ['beach', '해변', 'wave']];
 const favCount = () => S.places.filter((p) => p.fav).length;
+/* ===== 첫 화면(지도): 위 여정 헤더 + 아래 끌어올리는 시트(검색·카드·목록) ===== */
+let sheetUp = false, sheetVis = 0;
+function renderMapTop() {
+  const days = tripDays(), before = todayStr() < S.trip.start, dleft = Math.round((dateObj(S.trip.start) - dateObj(todayStr())) / 864e5);
+  $('#mapTop').innerHTML = `<div class="hhead hjour">${tripJourney(days, before, dleft)}<button class="icon" data-act="tab" data-tab="sunset" aria-label="선셋 알람" style="width:36px;height:36px;flex-shrink:0">${svg('bell', 20, '#1C2B2E')}</button></div>`;
+}
 function buildMapHeader() {
-  $('#mapTop').innerHTML = `
-    <div class="mtrow">
-      <div style="position:relative;flex:1;min-width:0">
-        <label class="msearch">${svg('search', 18, '#1C2B2E')}
-          <input id="placeSearch" type="search" placeholder="장소 검색" aria-label="장소 검색" autocomplete="off">
-          <span class="mday"><b id="mapTripName">보라카이</b> <span id="mapDayLabel"></span></span></label>
-        <div id="searchResults" class="sresults" style="display:none"></div>
-      </div>
-      <button class="mfab" data-act="tab" data-tab="sunset" aria-label="선셋 알람">${svg('bell', 21, '#1C2B2E')}</button>
-    </div>
-    <div class="mcats" id="mapCats"></div>`;
-  $('#placeSearch').addEventListener('input', renderSearch);
-  $('#placeSearch').addEventListener('focus', renderSearch);
-  $('#placeSearch').addEventListener('blur', () => setTimeout(() => { $('#searchResults').style.display = 'none'; }, 200));
+  $('#msheet').innerHTML = `
+    <div class="mfloat"><button class="mfab2" id="favFab" data-act="favFab" aria-label="즐겨찾기 모아보기"></button><button class="mfab2" data-act="locate" aria-label="내 위치로">${svg('crosshair', 21, '#1C2B2E')}</button></div>
+    <div class="msh-head"><div class="msh-grab" aria-hidden="true"></div>
+      <label class="msearch2">${svg('search', 18, '#5B6B6E')}<input id="placeSearch" type="search" placeholder="장소·가게 검색" aria-label="장소 검색" autocomplete="off" enterkeyhint="search">
+      <button type="button" class="msclear" data-act="searchClear" aria-label="검색 지우기">${svg('close', 14, '#5B6B6E')}</button></label></div>
+    <div id="mapCard"></div>
+    <div class="msh-body" id="mshBody"><div class="mchips" id="mapCats"></div><div id="mshList"></div></div>`;
+  const inp = $('#placeSearch');
+  inp.addEventListener('input', () => { S.ui.sheetQ = inp.value; $('#msheet').classList.toggle('hasq', !!inp.value); renderSheetList(); if (inp.value && !sheetUp) setSheet(true); });
+  inp.addEventListener('focus', () => { if (!sheetUp) setSheet(true); });
   mapHeaderBuilt = true;
 }
-function renderSearch() {
-  const q = $('#placeSearch').value.trim().toLowerCase(), box = $('#searchResults');
-  if (!q) { box.style.display = 'none'; return; }
-  const hits = S.places.filter((p) => (p.name + ' ' + (p.area || '') + ' ' + (CATS[p.cat] || '')).toLowerCase().includes(q)).slice(0, 6);
-  box.innerHTML = hits.length ? hits.map((p) => `<button data-act="searchPick" data-id="${p.id}">${svg(CAT_ICON[p.cat] || 'pin', 18, G)}<span><b>${esc(p.name)}</b><span class="small muted"> · ${esc(p.area || CATS[p.cat])}</span></span></button>`).join('')
-    : `<div class="small muted" style="padding:14px">"${esc(q)}" 장소가 없어요. 지도를 길게 눌러 추가해 보세요.</div>`;
-  box.style.display = 'block';
-}
+const STABS = [['today', '오늘 일정', 'list'], ['fav', '즐겨찾기', 'heart'], ['food', '맛집', 'food'], ['cafe', '카페', 'cafe'], ['beach', '해변', 'wave']];
 function renderMapCats() {
-  const f = S.ui.placeFilter;
-  $('#mapCats').innerHTML = `<button class="mcat fav ${f === 'fav' ? 'on' : ''}" data-act="pfilter" data-f="${f === 'fav' ? 'all' : 'fav'}" aria-pressed="${f === 'fav'}">${svg('heart', 15, f === 'fav' ? '#fff' : '#E5484D', 2.4)}즐겨찾기 <span style="font-weight:500;opacity:.75">${favCount()}</span></button>${f === 'fav' ? `<button class="mcat" data-act="favSheet">${svg('list', 15, G)}목록</button>` : ''}` + MAP_CATS.map(([k, label, ic]) =>
-    `<button class="mcat ${f === k ? 'on' : ''}" data-act="pfilter" data-f="${f === k ? 'all' : k}" aria-pressed="${f === k}">${svg(ic, 16, f === k ? '#fff' : G)}${label}</button>`).join('');
+  const t = S.ui.sheetTab || 'today';
+  $('#mapCats').innerHTML = STABS.map(([k, label, ic]) => `<button class="mchip ${t === k ? 'on' : ''}${k === 'fav' ? ' fav' : ''}" data-act="stab" data-t="${k}" aria-pressed="${t === k}">${svg(ic, 15, t === k ? '#fff' : (k === 'fav' ? '#E5484D' : G), 2.3)}${label}${k === 'fav' ? ` <span class="cnt">${favCount()}</span>` : ''}</button>`).join('');
+  renderSheetList();
 }
 function renderMapLegend() {
-  $('#mapLegend').innerHTML = '';
-  $('#mapLocate').innerHTML = `<button data-act="locate" aria-label="내 위치로">${svg('crosshair', 22, '#1C2B2E')}</button>`;
+  const fb = $('#favFab'); if (!fb) return;
+  const on = S.ui.placeFilter === 'fav';
+  fb.classList.toggle('on', on); fb.setAttribute('aria-pressed', on);
+  fb.innerHTML = svg('heart', 20, on ? '#fff' : '#E5484D', 2.3);
 }
-function placeMapFloat() {
-  const card = $('#mapCard'), b = (card.offsetHeight ? card.offsetHeight + 22 : 22);
-  $('#mapLegend').style.bottom = b + 'px'; $('#mapLocate').style.bottom = b + 'px';
-  $('#mapView').style.setProperty('--mfloat', (b - 14) + 'px');
+function listRow(act, id, icon, title, sub, right, extra) {
+  return `<button class="mrow${extra || ''}" data-act="${act}" data-id="${id}">${icon}<span class="mrow-t"><b>${title}</b>${sub ? `<span>${sub}</span>` : ''}</span>${right ? `<span class="mrow-r">${right}</span>` : ''}</button>`;
 }
-function renderMapCard() { renderMapCardInner(); placeMapFloat(); }
+const distTo = (p) => (userPos && insideBoracay(userPos) && p.lat) ? fmtDist(Math.hypot((p.lng - userPos.lng) * 108900, (p.lat - userPos.lat) * 110600)) : '';
+function placeIcon(p) { return `<span class="mrow-ic${p.fav ? ' fav' : ''}">${svg(p.fav ? 'heart' : (CAT_ICON[p.cat] || 'pin'), 16, '#fff', 2.2)}</span>`; }
+function renderSheetList() {
+  const box = $('#mshList'); if (!box) return;
+  const q = (S.ui.sheetQ || '').trim().toLowerCase(), t = S.ui.sheetTab || 'today';
+  if (q) {
+    const hits = S.places.filter((p) => [p.name, p.area, CATS[p.cat], ...(p.menu || []).map((m) => m.name)].join(' ').toLowerCase().includes(q));
+    box.innerHTML = hits.length ? hits.map((p) => listRow('selFromList', p.id, placeIcon(p), esc(p.name), esc(CATS[p.cat] || p.area || ''), distTo(p))).join('')
+      : `<div class="empty" style="padding:22px 0">"${esc(q)}" 장소가 없어요<br><span class="small">지도에서 가게를 누르거나 길게 눌러 추가해 보세요</span></div>`;
+    return;
+  }
+  if (t === 'today') {
+    const day = currentDay(), tt = sunTimes(day), list = sortTodos(todosOf(day).slice()), before = todayStr() < S.trip.start;
+    const spent = S.expenses.filter((x) => x.date === todayStr()).reduce((a, x) => a + (+x.amount || 0), 0);
+    box.innerHTML = `<div class="minfo">
+        <button data-act="tab" data-tab="sunset">${svg('sun', 16, '#C2502C')}<span>${before ? '첫날' : '오늘'} 일몰 <b class="num">${fmtTime(tt.set)}</b>${S.alarm.off[day] ? '' : ` · 알람 ${fmtTime(new Date(tt.set - S.alarm.offset * 60000))}`}</span></button>
+        <button data-act="tab" data-tab="money">${svg('wallet', 16, G)}<span>${before ? '경비' : '오늘'} <b class="num">${won(before ? settlement().total : spent)}</b></span></button></div>
+      <div class="between" style="padding:6px 2px 2px"><b style="font-size:15px">D${dayIndex(day)} · ${fmtDate(day)}</b><button class="poilink" data-act="tab" data-tab="todo">전체 일정 ›</button></div>
+      ${list.length ? list.map((it) => { const p = placeById(it.placeId);
+        return listRow(p && p.lat ? 'selFromList' : 'todoInfo', p && p.lat ? p.id : it.id, `<span class="mrow-time num">${esc(it.time || '--:--')}</span>`, esc(it.title), esc(p ? p.name : (it.where || it.note || '')), p && p.lat ? distTo(p) : '', it.done ? ' done' : ''); }).join('')
+        : '<div class="empty" style="padding:22px 0">이날 일정이 아직 없어요</div>'}`;
+    return;
+  }
+  const list = S.places.filter((p) => t === 'fav' ? p.fav : p.cat === t);
+  if (userPos && insideBoracay(userPos)) list.sort((a, b) => (a.lat ? Math.hypot(a.lng - userPos.lng, a.lat - userPos.lat) : 9) - (b.lat ? Math.hypot(b.lng - userPos.lng, b.lat - userPos.lat) : 9));
+  box.innerHTML = list.length ? list.map((p) => listRow('selFromList', p.id, placeIcon(p), esc(p.name), esc(CATS[p.cat] || ''), p.lat ? distTo(p) : '위치 확인 중')).join('')
+    : `<div class="empty" style="padding:22px 0">${t === 'fav' ? '즐겨찾기가 없어요. 장소 카드의 ♥를 눌러 보세요' : '저장된 장소가 없어요'}</div>`;
+}
+function nextCardHtml() {
+  const day = currentDay(), list = sortTodos(todosOf(day).slice()), before = todayStr() < S.trip.start, nowHM = fmtTime(new Date());
+  const next = list.find((x) => !x.done && (before || todayStr() !== day || !x.time || x.time >= nowHM)) || list.find((x) => !x.done);
+  if (!next) return `<div class="mnext"><span class="mrow-ic" style="background:#E6F3EF">${svg('list', 18, G)}</span><span class="mrow-t"><b>남은 일정이 없어요</b><span>위로 올려 즐겨찾기·맛집을 둘러보세요</span></span></div>`;
+  const np = placeById(next.placeId), wi = walkInfo(np), done = list.filter((x) => x.done).length;
+  return `<div class="mnext"><button class="mnext-main" data-act="${np ? 'openPlace' : 'todoInfo'}" data-id="${np ? np.id : next.id}">
+      <span class="mrow-ic" style="background:${G}">${svg(np ? (CAT_ICON[np.cat] || 'pin') : 'list', 18, '#fff')}</span>
+      <span class="mrow-t"><span class="mnext-k">다음 일정${next.time ? ' · ' + esc(next.time) : ''} · D${dayIndex(day)} ${done}/${list.length}</span><b>${esc(next.title)}</b><span>${np ? esc(np.name) : esc(next.where || '장소 미정')}${wi ? ` · 도보 ${wi.min}분` : ''}</span></span></button>
+    ${np && np.lat ? `<button class="hnav2" data-act="navTo" data-id="${np.id}" aria-label="길안내">${svg('nav', 20, '#1A73E8')}</button>` : ''}</div>`;
+}
+// 시트 위치: 접힘 = 검색 + 카드만 보임, 펼침 = 목록까지
+function layoutSheet() {
+  const sh = $('#msheet'); if (!sh || !sh.offsetHeight || sh.style.transition === 'none') return; // 끄는 중엔 건드리지 않음
+  const head = sh.querySelector('.msh-head'), card = $('#mapCard');
+  const peek = head.offsetHeight + (card ? card.offsetHeight : 0) + 10;
+  const off = Math.max(0, sh.offsetHeight - peek);
+  sh.dataset.off = off;
+  sh.style.transform = sheetUp && !NAV ? 'translateY(0)' : `translateY(${off}px)`;
+  sheetVis = sheetUp && !NAV ? sh.offsetHeight : peek;
+  $('#mapView').style.setProperty('--mfloat', (sheetVis + 6) + 'px');
+}
+addEventListener('resize', () => { if (S.ui.tab === 'map') requestAnimationFrame(layoutSheet); });
+function setSheet(up) {
+  sheetUp = !!up && !NAV;
+  const sh = $('#msheet'); if (!sh) return;
+  sh.classList.toggle('up', sheetUp);
+  if (!sheetUp) { const inp = $('#placeSearch'); if (inp && document.activeElement === inp) inp.blur(); const bd = $('#mshBody'); if (bd) bd.scrollTop = 0; }
+  layoutSheet();
+}
+(function bindSheetDrag() {
+  let st = null;
+  document.addEventListener('touchstart', (e) => {
+    const sh = e.target.closest && e.target.closest('#msheet');
+    if (!sh || S.ui.tab !== 'map' || e.touches.length !== 1 || e.target.closest('.mfloat')) { st = null; return; }
+    const body = $('#mshBody');
+    st = { sh, body, y0: e.touches[0].clientY, t0: Date.now(), dy: 0, drag: false, inBody: !!e.target.closest('#mshBody'), off: +sh.dataset.off || 0, raf: 0 };
+  }, { passive: true });
+  document.addEventListener('touchmove', (e) => {
+    if (!st) return;
+    const dy = e.touches[0].clientY - st.y0; st.dy = dy;
+    if (!st.drag) {
+      if (Math.abs(dy) < 7) return;
+      if (sheetUp && st.inBody && (dy < 0 || st.body.scrollTop > 0)) { st = null; return; } // 목록 스크롤
+      if (!sheetUp && dy > 0) { st = null; return; }
+      st.drag = true; st.sh.style.transition = 'none';
+      const inp = $('#placeSearch'); if (inp && document.activeElement === inp) inp.blur();
+    }
+    e.preventDefault();
+    const base = sheetUp ? 0 : st.off, y = Math.max(0, Math.min(st.off, base + dy));
+    if (!st.raf) st.raf = requestAnimationFrame(() => { if (st) { st.sh.style.transform = `translateY(${y}px)`; st.raf = 0; } });
+  }, { passive: false });
+  const end = () => {
+    if (!st) return; const s0 = st; st = null;
+    if (!s0.drag) return;
+    if (s0.raf) cancelAnimationFrame(s0.raf);
+    s0.sh.style.transition = '';
+    const v = s0.dy / Math.max(1, Date.now() - s0.t0);
+    setSheet(sheetUp ? !(s0.dy > 70 || v > 0.45) : (s0.dy < -50 || v < -0.4));
+  };
+  document.addEventListener('touchend', end); document.addEventListener('touchcancel', end);
+})();
+function selFromList(id) {
+  const p = placeById(id); if (!p) return;
+  if (!p.lat) { placeSheet(p); return; }
+  if (POI) closePoi(true);
+  S.ui.selPlace = p.id; save(); setSheet(false); refreshMap();
+  whenMapReady(() => map.flyTo({ center: [p.lng, p.lat], zoom: Math.max(map.getZoom(), 16), padding: { top: headerH(), bottom: bottomH(), left: 0, right: 0 } }));
+}
+function renderMapCard() { if (!$('#mapCard')) return; renderMapCardInner(); requestAnimationFrame(layoutSheet); }
 function renderMapCardInner() {
   const card = $('#mapCard');
   const pinT = S.ui.pinTodo && findTodo(S.ui.pinTodo);
-  $('#mapLegend').style.display = NAV ? 'none' : '';
   if (NAV) { card.innerHTML = navCard(); return; }
   if (pinT) { card.innerHTML = `<div class="mcard" style="flex-direction:column;align-items:stretch;gap:8px">
       <span style="font-size:15px"><b>'${esc(pinT.title)}'</b> 위치를 지도에서 <b>길게 눌러</b> 정해 주세요</span>
       <button class="btn ghost" data-act="cancelPin" style="height:38px">취소</button></div>`; return; }
   if (POI) { card.innerHTML = poiCard(); const slot = $('#poiGSlot'); if (slot && POI.gel) slot.appendChild(POI.gel); return; }
   const p = placeById(S.ui.selPlace);
-  if (!p) { card.innerHTML = ''; return; }
+  if (!p) { card.innerHTML = nextCardHtml(); return; }
   const inPlan = routeStops().some((x) => x.id === p.id);
   if (GOOGLE_KEY && !gAuthFail && p.lat) {
     const g = placeG(p);
@@ -498,7 +533,7 @@ function renderMapCardInner() {
         <button class="icon" data-act="selClear" aria-label="닫기" style="width:32px;height:32px;flex-shrink:0">${svg('close', 16, '#5B6B6E')}</button></div>
       ${g.state === 'ok' ? '<div id="ownGSlot" class="poig"></div>' : `<div class="poig-msg">${g.state === 'loading' ? 'Google 정보 찾는 중…' : g.state === 'none' ? 'Google에서 이 장소를 찾지 못했어요' : 'Google 정보를 불러오지 못했어요'}</div>`}
       <div class="between" style="gap:6px">
-        <span class="row" style="gap:12px"><button data-act="openPlace" data-id="${p.id}" class="poilink">메뉴·가격 ›</button>${g.state === 'ok' ? `<button data-act="gFull" data-id="${p.id}" class="poilink">리뷰·사진 ›</button>` : ''}</span>
+        <span class="row" style="gap:12px"><button data-act="openPlace" data-id="${p.id}" class="poilink">${isEatery(p) ? '메뉴·가격 ›' : '자세히 ›'}</button>${g.state === 'ok' ? `<button data-act="gFull" data-id="${p.id}" class="poilink">리뷰·사진 ›</button>` : ''}</span>
         <span class="row" style="gap:6px"><button data-act="navTo" data-id="${p.id}" aria-label="길찾기" class="mbtn" style="background:#EEF4FD;color:#1A73E8;padding:0 12px">${svg('nav', 16, '#1A73E8')}</button>
         <button data-act="placeToTodo" data-id="${p.id}" class="mbtn">${svg('plus', 16, '#fff', 2.6)}${inPlan ? '또 추가' : '일정에 추가'}</button></span>
       </div></div>`;
@@ -524,13 +559,9 @@ let map = null, mapState = 'idle', markers = [], numMarkers = [];
 function renderMap() {
   S.ui.day = tripDays().includes(S.ui.day) ? S.ui.day : currentDay();
   if (!mapHeaderBuilt) buildMapHeader();
-  const day = currentDay(), before = todayStr() < S.trip.start;
-  $('#mapTripName').textContent = S.trip.city && !/boracay/i.test(S.trip.city) ? S.trip.name : '보라카이';
-  $('#mapDayLabel').textContent = before ? `D-${Math.round((dateObj(S.trip.start) - dateObj(todayStr())) / 864e5)}` : `${dayIndex(day)}일차`;
-  renderMapCats(); renderMapLegend(); renderMapCard();
+  renderMapTop(); renderMapCats(); renderMapLegend(); renderMapCard();
   $('#mapbox').style.display = 'block';
-  $('#mapbox').style.top = '0';
-  $('#mapLocate').style.display = 'block';
+  if (NAV && sheetUp) setSheet(false);
   showMapFail(mapState === 'failed');
   if (mapState === 'idle') loadMapbox();
   if (mapState === 'ready') { map.resize(); refreshMap(); runMapQueue(); }
@@ -567,7 +598,8 @@ function loadMapbox() {
 function initMap() {
   try {
     mapboxgl.accessToken = MAPBOX_TOKEN;
-    map = new mapboxgl.Map({ container: 'mapbox', style: MAPBOX_STYLE, center: [121.9235, 11.9650], zoom: 14.6, minZoom: 12.5, maxZoom: 19, maxBounds: BORACAY.bounds, attributionControl: true });
+    map = new mapboxgl.Map({ container: 'mapbox', style: MAPBOX_STYLE, center: [121.9235, 11.9650], zoom: 14.6, minZoom: 12.5, maxZoom: 19, maxBounds: BORACAY.bounds, attributionControl: false, dragRotate: false, pitchWithRotate: false, touchPitch: false });
+    map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left'); try { map.touchZoomRotate.disableRotation(); } catch (e) {}
   } catch (e) { mapboxFailed(); return; }
   let loaded = false;
   map.on('load', () => {
@@ -647,7 +679,7 @@ function mbPin(p, n, on) {
     const el = document.createElement('button'); el.dataset.mb = '1'; el.setAttribute('aria-label', '즐겨찾기 ' + p.name);
     el.className = 'favpin' + (on ? ' on' : '');
     el.innerHTML = `<span class="favdot">${svg('heart', on ? 14 : 11, '#fff', 2.4)}</span><span class="favlab">${esc(p.name)}</span>`;
-    el.addEventListener('click', (ev) => { ev.stopPropagation(); if (POI) closePoi(true); S.ui.selPlace = p.id; save(); refreshMap(); });
+    el.addEventListener('click', (ev) => { ev.stopPropagation(); if (POI) closePoi(true); S.ui.selPlace = p.id; save(); if (sheetUp) setSheet(false); refreshMap(); });
     return new mapboxgl.Marker({ element: el, anchor: 'top', offset: [0, -11] }).setLngLat([p.lng, p.lat]).addTo(map);
   }
   const el = document.createElement('button'); el.dataset.mb = '1'; el.setAttribute('aria-label', (n ? n + '번 ' : '') + p.name);
@@ -656,7 +688,7 @@ function mbPin(p, n, on) {
   el.innerHTML = n
     ? `<svg width="32" height="40" viewBox="-16 -38 32 40" aria-hidden="true"><path d="M0 0 C-5 -7 -14 -12 -14 -22 A14 14 0 1 1 14 -22 C14 -12 5 -7 0 0 Z" fill="${on ? G : GL}" stroke="#fff" stroke-width="2.5"/><text y="-17" text-anchor="middle" style="font:700 14px 'Space Grotesk',sans-serif;fill:#fff">${n}</text></svg>${label}`
     : `<span style="width:28px;height:28px;border-radius:50%;background:#fff;border:2px solid ${on ? G : '#9CC9BF'};display:flex;align-items:center;justify-content:center;box-shadow:${on ? '0 0 0 6px rgba(45,170,138,.25)' : 'none'}">${svg(CAT_ICON[p.cat] || 'pin', 14, G, 2.2)}</span>${label}`;
-  el.addEventListener('click', (ev) => { ev.stopPropagation(); if (POI) closePoi(true); S.ui.selPlace = p.id; save(); refreshMap(); });
+  el.addEventListener('click', (ev) => { ev.stopPropagation(); if (POI) closePoi(true); S.ui.selPlace = p.id; save(); if (sheetUp) setSheet(false); refreshMap(); });
   return new mapboxgl.Marker({ element: el, anchor: n ? 'top' : 'center', offset: n ? [0, -40] : [0, 8] }).setLngLat([p.lng, p.lat]).addTo(map);
 }
 function refreshMeMarker() {
@@ -726,6 +758,7 @@ function openPoi(p) {
   if (mine) { closePoi(true); S.ui.selPlace = mine.id; save(); refreshMap(); return; }
   S.ui.selPlace = null;
   POI = Object.assign({ gid: null, gstate: GOOGLE_KEY ? 'loading' : 'nokey', gel: null, gname: '' }, p);
+  if (sheetUp) setSheet(false);
   if (!poiMarker) { const el = document.createElement('div'); el.className = 'poimark'; el.style.pointerEvents = 'none'; poiMarker = new mapboxgl.Marker({ element: el }); }
   poiMarker.setLngLat([p.lng, p.lat]).addTo(map);
   refreshMap();
@@ -845,7 +878,7 @@ async function resolveFavs() {
       }));
     }
     save();
-    if (S.ui.tab === 'map') refreshMap(); else if (S.ui.tab === 'home') updateHomeMap();
+    if (S.ui.tab === 'map') refreshMap();
   } catch (e) {} finally { favResolving = false; }
 }
 setTimeout(resolveFavs, 1500);
@@ -896,7 +929,7 @@ function ensureTrip(t) {
   t.alarm = t.alarm || { offset:30, off:{}, fired:{} };
   t.todos = t.todos || {}; t.places = t.places || []; t.tickets = t.tickets || [];
   t.checklist = t.checklist || []; t.expenses = t.expenses || []; t.journal = t.journal || [];
-  t.ui = Object.assign({ tab:'home', day:t.trip.start, placeFilter:'all', ticketFilter:'all', checkFilter:'all', placeList:'all' }, t.ui || {});
+  t.ui = Object.assign({ tab:'map', day:t.trip.start, placeFilter:'all', ticketFilter:'all', checkFilter:'all', placeList:'all' }, t.ui || {});
   t.tickets.forEach((x) => { x.imgs = x.imgs || []; x.files = x.files || []; });
   t.places.forEach((p) => { if (PLACE_FIX[p.id] && !p.coordV) { p.lng = PLACE_FIX[p.id][0]; p.lat = PLACE_FIX[p.id][1]; } p.coordV = 2; });
   if (!t.planV && t.trip.start === '2026-11-13') {
@@ -910,6 +943,7 @@ function ensureTrip(t) {
   }
   t.planV = 1;
   t.ui.mapMode = 'mapbox'; // 기본(그림) 지도는 없애고 Mapbox만 씀
+  if (t.ui.tab === 'home') t.ui.tab = 'map'; // 홈은 지도로 합쳐짐
   if (!t.favV) {
     FAV_SEED.forEach(([gid, name, cat, mine]) => {
       const ex = t.places.find((p) => p.gid === gid || (mine && p.id === mine));
@@ -1543,7 +1577,8 @@ async function fetchWeather(manual) {
     const j = await (await fetch(url)).json();
     if (!j.daily) throw new Error();
     DB.weather[id] = { at: Date.now(), data: j }; save();
-    if (S.id === id && (S.ui.tab === 'sunset' || S.ui.tab === 'home')) render();
+    if (S.id === id && S.ui.tab === 'sunset') render();
+    if (S.id === id && S.ui.tab === 'map') renderMapCard();
     if (manual) toast('날씨를 새로 받았어요');
   } catch (e) { if (manual) toast('지금은 날씨를 받아올 수 없어요'); }
 }
@@ -1751,7 +1786,7 @@ document.addEventListener('submit', async (e) => {
     if (!data.members.length) data.members = ['나'];
     let t, cityChanged = true;
     if (form.dataset.new) {
-      t = ensureTrip({ trip: data, ui: { tab: 'home', day: s } }); DB.trips[t.id] = t;
+      t = ensureTrip({ trip: data, ui: { tab: 'map', day: s } }); DB.trips[t.id] = t;
     } else { t = S; cityChanged = t.trip.city !== data.city; Object.assign(t.trip, data); t.alarm.fired = {}; if (cityChanged) delete DB.weather[t.id]; }
     const cv = form.querySelector('[name=cover]').files[0];
     if (cv) { if (t.trip.cover) delImg(t.trip.cover); t.trip.cover = uid(); putImg(t.trip.cover, cv); }
@@ -1868,111 +1903,6 @@ document.addEventListener('click', (e) => {
 });
 
 /* ========= 홈 화면 미니 지도 · 내 Mapbox 지도 ========= */
-let mbLibPromise = null;
-function loadMapboxLib() {
-  if (window.mapboxgl) return Promise.resolve();
-  if (mbLibPromise) return mbLibPromise;
-  const V = '3.34.2';
-  const srcs = [`https://api.mapbox.com/mapbox-gl-js/v${V}`, `https://unpkg.com/mapbox-gl@${V}/dist`, `https://cdn.jsdelivr.net/npm/mapbox-gl@${V}/dist`];
-  mbLibPromise = new Promise((res, rej) => {
-    const tryAt = (i) => {
-      if (i >= srcs.length) { mbLibPromise = null; rej(new Error('lib')); return; }
-      const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = srcs[i] + '/mapbox-gl.css'; document.head.appendChild(css);
-      const js = document.createElement('script'); js.src = srcs[i] + '/mapbox-gl.js';
-      js.onload = () => window.mapboxgl ? res() : tryAt(i + 1);
-      js.onerror = () => tryAt(i + 1);
-      document.head.appendChild(js);
-    };
-    tryAt(0);
-  });
-  return mbLibPromise;
-}
-document.addEventListener('scroll', (e) => {
-  const c = e.target; if (!c || c.id !== 'hcards') return;
-  const i = Math.round(c.scrollLeft / Math.max(1, c.firstElementChild.offsetWidth + 10));
-  document.querySelectorAll('.hdots i').forEach((d, k) => d.classList.toggle('on', k === i));
-}, true);
-let homeMap = null, homeMbEl = null, homeMbState = 'idle', homeMbKey = '', homeMarkers = [], homeFitSig = '';
-function dropHomeMap() {
-  if (homeMap) { try { homeMap.remove(); } catch (e) {} }
-  homeMap = null; homeMbState = 'idle'; homeMarkers = []; homeFitSig = '';
-  if (homeMbEl) { homeMbEl.remove(); homeMbEl = null; }
-}
-function mountHomeMap() {
-  const host = document.querySelector('.hmap');
-  const want = S.ui.mapMode === 'mapbox' && host;
-  const key = (S.ui.mbTheme || 'app') + '|' + S.id;
-  if (!want) { if (homeMbEl) homeMbEl.remove(); return; }
-  if (homeMbState === 'failed') return;
-  if (homeMbKey !== key) { dropHomeMap(); homeMbKey = key; }
-  if (!homeMbEl) {
-    homeMbEl = document.createElement('div');
-    homeMbEl.style.cssText = 'position:absolute;inset:0;opacity:0;transition:opacity .35s';
-    homeMbEl.setAttribute('aria-label', '오늘 동선 지도');
-  }
-  host.insertBefore(homeMbEl, host.children[1] || null); // 그림 지도 위, 헤더 카드 아래
-  if (homeMbState === 'ready') { homeMap.resize(); updateHomeMap(); const o = host.querySelector('.hosm'); if (o) o.style.display = 'none'; return; }
-  if (homeMbState === 'loading') return;
-  homeMbState = 'loading';
-  loadMapboxLib().then(() => {
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-    let m;
-    try { m = new mapboxgl.Map({ container: homeMbEl, style: MAPBOX_STYLE, center: [121.9235, 11.9650], zoom: 14, minZoom: 12.5, maxZoom: 19, maxBounds: BORACAY.bounds, dragRotate: false, pitchWithRotate: false, touchPitch: false, attributionControl: false, logoPosition: 'bottom-right' }); m.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right'); try { m.touchZoomRotate.disableRotation(); } catch (e) {} }
-    catch (e) { dropHomeMap(); homeMbState = 'failed'; return; }
-    homeMap = m;
-    let loaded = false;
-    m.on('load', () => {
-      loaded = true; homeMbState = 'ready';
-      if (S.ui.mbTheme !== 'original') applyAppTheme(m);
-      const std = !!(m.getStyle().imports || []).length;
-      m.addSource('beach', { type: 'geojson', data: { type: 'FeatureCollection', features: BEACHES.map((c) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [c.concat([c[0]])] } })) } });
-      if (S.ui.mbTheme !== 'original') m.addLayer(Object.assign({ id: 'app-beach', type: 'fill', source: 'beach', paint: { 'fill-color': '#F4E3B4', 'fill-opacity': 0.95 } }, std ? { slot: 'bottom' } : {}));
-      m.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      m.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': GL, 'line-width': 4.5 } });
-      PALMS.forEach((ll) => { const el = document.createElement('div'); el.innerHTML = `<svg width="26" height="23" viewBox="-15 -23 30 26" aria-hidden="true">${PALM}</svg>`; new mapboxgl.Marker({ element: el, anchor: 'bottom' }).setLngLat(ll).addTo(m); });
-      UMBS.forEach((ll) => { const el = document.createElement('div'); el.innerHTML = `<svg width="18" height="20" viewBox="-10 -21 20 22" aria-hidden="true">${UMB}</svg>`; new mapboxgl.Marker({ element: el, anchor: 'bottom' }).setLngLat(ll).addTo(m); });
-      try {
-        m.setConfigProperty('basemap', 'densityPointOfInterestLabels', 4);
-        m.addInteraction('home-poi', { type: 'click', target: { featuresetId: 'poi', importId: 'basemap' }, handler: (e) => {
-          const f = e.feature, c = f.geometry && f.geometry.coordinates; if (!c) return true;
-          const poi = { name: (f.properties && f.properties.name) || '', lng: c[0], lat: c[1], cat: poiCat(f.properties.class, f.properties.maki) };
-          const cam = { center: m.getCenter(), zoom: Math.max(m.getZoom(), 16) };
-          S.ui.tab = 'map'; save(); render();
-          whenMapReady(() => { map.jumpTo(cam); openPoi(poi); });
-          return true;
-        } });
-        m.addInteraction('home-poi-in', { type: 'mouseenter', target: { featuresetId: 'poi', importId: 'basemap' }, handler: () => { m.getCanvas().style.cursor = 'pointer'; } });
-        m.addInteraction('home-poi-out', { type: 'mouseleave', target: { featuresetId: 'poi', importId: 'basemap' }, handler: () => { m.getCanvas().style.cursor = ''; } });
-      } catch (e) {}
-      hideFerries(m);
-      updateHomeMap();
-      m.once('idle', () => { if (homeMbEl) homeMbEl.style.opacity = '1'; const o = document.querySelector('.hosm'); if (o) o.style.display = 'none'; });
-    });
-    m.on('error', () => { if (!loaded) { dropHomeMap(); homeMbState = 'failed'; } });
-    setTimeout(() => { if (!loaded && homeMbState !== 'failed') { dropHomeMap(); homeMbState = 'failed'; } }, 6000);
-  }).catch(() => { dropHomeMap(); homeMbState = 'failed'; });
-}
-function updateHomeMap() {
-  if (!homeMap || homeMbState !== 'ready') return;
-  const day = currentDay();
-  const stops = [];
-  homeMarkers.forEach((mk) => mk.remove()); homeMarkers = [];
-  if (userPos && insideBoracay(userPos)) {
-    const el = document.createElement('div');
-    el.innerHTML = '<svg width="40" height="40" viewBox="-20 -20 40 40" aria-hidden="true"><circle r="18" fill="rgba(26,115,232,.18)"/><circle r="7" fill="#1A73E8" stroke="#fff" stroke-width="3"/></svg>';
-    homeMarkers.push(new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat([userPos.lng, userPos.lat]).addTo(homeMap));
-  }
-  homeMap.getSource('route').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: stops.length > 1 ? stops.map((p) => [p.lng, p.lat]) : [] } });
-  const sig = day + stops.map((p) => p.id).join(',');
-  if (sig !== homeFitSig) {
-    homeFitSig = sig;
-    const pts = stops.length ? stops.map((p) => [p.lng, p.lat]) : WHITE_BEACH;
-    const xs = pts.map((c) => c[0]), ys = pts.map((c) => c[1]);
-    if (pts.length > 1) homeMap.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: { top: 110, bottom: 250, left: 60, right: 60 }, maxZoom: 15.5, duration: 0 });
-    else homeMap.jumpTo({ center: pts[0], zoom: 15, padding: { top: 90, bottom: 220, left: 0, right: 0 } });
-  }
-}
-
 /* ========= 시트 ========= */
 function openSheet(html) { $('#sheet').innerHTML = `<div class="grab"></div>${html}`; $('#sheet').style.display = 'block'; $('#sheetBg').style.display = 'block'; }
 function closeSheet() { $('#sheet').style.display = 'none'; $('#sheetBg').style.display = 'none'; }
@@ -1992,8 +1922,6 @@ document.addEventListener('click', (e) => {
     case 'favGo': { const p = placeById(id); closeSheet(); if (!p) break; if (!p.lat) { toast('위치를 확인하는 중이에요. 잠시 후 다시 눌러 주세요'); resolveFavs(); break; } if (POI) closePoi(true); S.ui.selPlace = p.id; save(); refreshMap(); whenMapReady(() => map.flyTo({ center: [p.lng, p.lat], zoom: Math.max(map.getZoom(), 16.5), padding: { top: headerH(), bottom: bottomH() + 120, left: 0, right: 0 } })); break; }
     case 'favToggle': { const p = placeById(id); if (!p) break; toggleFav(p); if (b.dataset.sheet) placeSheet(p); if (S.ui.tab === 'map') { refreshMap(); renderMapCats(); } else rerender(); break; }
     case 'poiFav': { const p = POI; if (!p) break; const place = { id: uid(), name: p.gname || p.name || CATS[p.cat] || '새 장소', cat: CATS[p.cat] ? p.cat : 'etc', area: '', lat: +p.lat.toFixed(6), lng: +p.lng.toFixed(6), menu: [], memo: '', coordV: 2, fav: true }; if (p.gid) place.gid = p.gid; S.places.unshift(place); closePoi(true); S.ui.selPlace = place.id; save(); refreshMap(); renderMapCats(); toast('즐겨찾기에 넣었어요'); break; }
-    case 'homeFit': homeFitSig = ''; updateHomeMap(); break;
-    case 'homeRetry': dropHomeMap(); homeMbState = 'idle'; rerender(); break;
     case 'poiFull': poiFullSheet(); break;
     case 'poiNav': if (POI) navTo({ id: 'poi', name: POI.name || CATS[POI.cat], lat: POI.lat, lng: POI.lng }); break;
     case 'poiAdd': poiAdd(); break;
@@ -2014,8 +1942,12 @@ document.addEventListener('click', (e) => {
     case 'placeToDay': { const p = placeById(id); todosOf(b.dataset.day).push({ id: uid(), time: '', title: p.name, placeId: p.id, done: false }); save(); closeSheet(); render(); refreshMap(); toast(`D${dayIndex(b.dataset.day)} 일정에 담았어요`); break; }
     case 'placeToTodo': todoForm(null, placeById(id)); break;
     case 'pfilter': S.ui.placeFilter = b.dataset.f; S.ui.selPlace = null; if (POI) closePoi(true); save(); renderMapCats(); refreshMap(); if (b.dataset.f !== 'all') fitFiltered(); break;
+    case 'stab': { const t = b.dataset.t; S.ui.sheetTab = t; S.ui.placeFilter = t === 'today' ? 'all' : t; S.ui.selPlace = null; if (POI) closePoi(true); save(); renderMapCats(); refreshMap(); if (t !== 'today') fitFiltered(); break; }
+    case 'favFab': { const on = S.ui.placeFilter !== 'fav'; S.ui.placeFilter = on ? 'fav' : 'all'; S.ui.sheetTab = on ? 'fav' : 'today'; S.ui.selPlace = null; if (POI) closePoi(true); save(); renderMapCats(); refreshMap(); if (on) fitFiltered(); toast(on ? '즐겨찾기만 모아서 보여 줘요' : '즐겨찾기 표시를 껐어요'); break; }
+    case 'selFromList': selFromList(id); break;
+    case 'searchClear': { const inp = $('#placeSearch'); if (inp) { inp.value = ''; S.ui.sheetQ = ''; $('#msheet').classList.remove('hasq'); renderSheetList(); inp.focus(); } break; }
     case 'selPlace': S.ui.selPlace = id; save(); refreshMap(); break;
-    case 'searchPick': { const p = placeById(id); S.ui.selPlace = id; if (p.cat && S.ui.placeFilter !== 'all' && S.ui.placeFilter !== p.cat) S.ui.placeFilter = 'all'; $('#placeSearch').value = ''; $('#searchResults').style.display = 'none'; save(); renderMap(); if (p.lat && view) centerOn(p); break; }
+    case 'searchPick': selFromList(id); break;
     case 'selClear': S.ui.selPlace = null; save(); refreshMap(); break;
     case 'locate': locate(); break;
     case 'mapRetry': if (map) { try { map.remove(); } catch (er) {} map = null; } mapState = navigator.onLine === false ? 'failed' : 'idle'; renderMap(); if (mapState === 'failed') toast('아직 인터넷에 연결되지 않았어요'); break;
@@ -2053,7 +1985,7 @@ document.addEventListener('keydown', (e) => {
 TZ = S.trip.tz || 'Asia/Manila';
 if (!DB.fx.fetched || Date.now() - DB.fx.fetched > 12 * 3600e3) fetchFx(false);
 render();
-setInterval(() => { checkAlarms(); if (S.ui.tab === 'home') render(); }, 30000);
+setInterval(() => { checkAlarms(); if (S.ui.tab === 'map') { renderMapTop(); if (!S.ui.selPlace && !POI && !NAV) renderMapCard(); } }, 30000);
 checkAlarms();
 
 /* ========= PWA: 오프라인 캐시 ========= */

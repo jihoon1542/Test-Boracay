@@ -59,40 +59,17 @@ h2{margin:0;font-size:17px}
 #toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;z-index:50;display:none;max-width:90%}
 .pin{width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid #C2502C;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.18)}
 .pin.food{background:#C2502C}
-.pin-num{width:22px;height:22px;border-radius:50%;background:var(--teal);color:#fff;font:700 12px 'Space Grotesk',sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff;pointer-events:none}
 #mapTop{position:absolute;left:0;right:0;top:0;z-index:6;padding:10px 12px 0;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 #mapTop>*{pointer-events:auto}
-.mtrow{display:flex;gap:8px;align-items:center}
-.mfab{width:46px;height:46px;flex-shrink:0;border-radius:50%;border:0;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.14);display:flex;align-items:center;justify-content:center}
-.mday{flex-shrink:0;font-size:12px;color:#17806D;background:#E6F3EF;border-radius:10px;padding:4px 9px;white-space:nowrap}
-.mday b{font-weight:700}
 #mapbox{top:200px}
 .msearch{display:flex;align-items:center;gap:8px;height:46px;border:0;border-radius:23px;padding:0 6px 0 14px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.14)}
 .msearch input{flex:1;min-width:0;border:0;outline:none;font-size:16px;background:transparent}
-.sresults{position:absolute;left:0;right:0;top:52px;background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.14);padding:6px;z-index:7}
-.sresults button{width:100%;display:flex;align-items:center;gap:10px;border:0;background:none;padding:12px 10px;border-radius:12px;text-align:left;font-size:15px}
-.sresults button:hover{background:#F2F7F5}
-.mcats{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;width:max-content;max-width:100%}
-.mcats::-webkit-scrollbar{display:none}
-.mcat{height:34px;border-radius:17px;border:0;background:#fff;display:flex;align-items:center;justify-content:center;gap:5px;font-size:13px;font-weight:700;padding:0 12px;box-shadow:0 1px 6px rgba(0,0,0,.12);flex-shrink:0}
-.mcat.on{background:#17806D;border-color:#17806D;color:#fff}
-#mapLocate{position:absolute;right:12px;bottom:96px;z-index:5}
-#mapLocate button{width:44px;height:44px;border-radius:50%;border:0;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.14);display:flex;align-items:center;justify-content:center}
-#mapLegend{position:absolute;left:12px;bottom:96px;z-index:5}
 #mapCard{position:absolute;left:10px;right:10px;bottom:10px;z-index:5}
 .mcard{background:#fff;border-radius:18px;padding:10px;display:flex;gap:10px;align-items:center;box-shadow:0 4px 18px rgba(0,0,0,.12)}
 .mthumb{width:64px;height:64px;border-radius:13px;border:0;background:#E6F3EF;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;padding:0}
 .mthumb img{width:100%;height:100%;object-fit:cover}
 .mbtn{height:36px;border:0;border-radius:11px;background:#17806D;color:#fff;font-weight:700;font-size:14px;padding:0 12px;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.hmap{position:relative;margin:-24px -18px 0;height:clamp(380px,58vh,600px);overflow:hidden;touch-action:none}
-.hmapbg{position:absolute;inset:0;background:#DCEFEA;display:flex;align-items:center;justify-content:center}
-.hfail{border:0;background:#fff;border-radius:14px;padding:10px 14px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.1)}
-.hctl{position:absolute;left:14px;bottom:44px;display:flex;gap:8px;align-items:center}
-.hfab{width:40px;height:40px;border-radius:50%;border:0;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .hhead{position:absolute;left:14px;right:14px;top:14px;background:#fff;border-radius:20px;padding:10px 6px 10px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,.08)}
-.hbig{height:40px;padding:0 14px;border-radius:999px;border:0;background:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
-.hnext-ic{width:50px;height:50px;border-radius:16px;background:#17806D;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.hrow:last-child{border-bottom:0}
 .micon{width:44px;height:44px;border-radius:12px;background:#E6F3EF;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .tripcard{background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05)}
 .tripcover{height:140px;background:#E6F3EF;display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -108,9 +85,6 @@ h2{margin:0;font-size:17px}
 .full img{width:100%;border-radius:12px;margin-bottom:8px}
 .empty{padding:28px 0;text-align:center;color:var(--muted);font-size:14px}
 pre.memo{white-space:pre-wrap;word-break:break-word;font-family:inherit;font-size:13px;margin:0;background:#fff;border-radius:12px;padding:12px}
-
-.hmap .mapboxgl-ctrl-bottom-left,.hmap .mapboxgl-ctrl-bottom-right{bottom:32px}
-.hmap .mapboxgl-ctrl-attrib.mapboxgl-compact{margin:0 8px 6px 0}
 
 /* 홈 화면 앱(standalone): 노치·홈 인디케이터 여백 */
 #view{padding-top:calc(24px + env(safe-area-inset-top))}
@@ -139,35 +113,11 @@ gmp-place-details,gmp-place-search{width:100%;--gmp-mat-font-family:'Noto Sans K
 /* 홈: 지도 전체 + 아래 넘겨 보는 카드 */
 html,body{overscroll-behavior:none}
 #view{overscroll-behavior:contain}
-#view.vhome{padding:0;overflow:hidden}
-#view.vhome .hmap{position:absolute;inset:0;margin:0;height:auto}
-.hhead-t{border:0;background:none;padding:0;text-align:left;display:flex;flex-direction:column;min-width:0;flex:1}
-.hhead-t b{font-size:18px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hhead-t span{font-size:12px;font-weight:700;color:#17806D}
-.hctl{position:absolute;left:16px;bottom:206px;display:flex;gap:8px;align-items:center;z-index:3}
-.hcards{position:absolute;left:0;right:0;bottom:24px;display:flex;gap:10px;padding:0 16px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;z-index:3;-webkit-overflow-scrolling:touch}
-.hcards::-webkit-scrollbar{display:none}
-.hcard{flex:0 0 calc(100% - 52px);max-width:360px;scroll-snap-align:center;box-sizing:border-box;border:0;border-radius:22px;padding:14px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.14);display:flex;flex-direction:column;gap:10px;text-align:left;height:160px;justify-content:space-between}
-.hnext2{display:flex;align-items:center;gap:12px;min-width:0}
-.hnext2 .hnext-ic{width:44px;height:44px;border-radius:14px;flex-shrink:0}
-.hnext-t{flex:1;min-width:0;border:0;background:none;padding:0;text-align:left;display:flex;flex-direction:column;gap:1px}
-.hnext-t b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hnav2{width:44px;height:44px;border-radius:50%;border:0;background:#EEF4FD;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.hchips{display:flex;gap:6px;overflow:hidden}
-.hchip{border:0;background:#F2F5F3;color:#5B6B6E;font-size:12px;font-weight:500;height:28px;padding:0 10px;border-radius:14px;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;max-width:150px;overflow:hidden;text-overflow:ellipsis}
-.hsunc{background:#17806D;color:#fff;justify-content:center;gap:2px}
-.hmoney{justify-content:center;gap:4px}
-.hbar2{height:6px;border-radius:3px;background:#E8ECEA;overflow:hidden;display:block}
-.hbar2 i{display:block;height:100%;background:#2DAA8A;border-radius:3px}
-.hmap .mapboxgl-ctrl-bottom-right{bottom:auto;top:calc(100px + env(safe-area-inset-top))}
-.hmap .mapboxgl-ctrl-bottom-left{display:none}
 /* 아이폰 홈 화면 앱: 상태바까지 화면 채우기 */
 #sbar{position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:#17806D;z-index:60;pointer-events:none}
 body.onmap #sbar{height:calc(env(safe-area-inset-top) + 18px);background:linear-gradient(rgba(0,0,0,.34),rgba(0,0,0,0))}
 .hhead{top:calc(12px + env(safe-area-inset-top))}
-.hdots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px;z-index:3}
-.hdots i{display:block;width:6px;height:6px;border-radius:3px;background:#B8C4C0;transition:width .2s}
-.hdots i.on{width:18px;background:#17806D}
 
 
 /* 홈 v3: 얇은 한 줄 여정 헤더 + 한 장씩 넘기는 얇은 카드 */
@@ -178,14 +128,6 @@ body.onmap #sbar{height:calc(env(safe-area-inset-top) + 18px);background:linear-
 .jnode span{font:600 9px 'Space Grotesk',sans-serif;color:#9AA5A7;line-height:1;margin-top:1px}
 .jnode.on span{color:#1C2B2E}
 .jline{flex:1;height:2px;border-radius:1px;margin:0 2px 10px}
-.hcards{gap:16px;padding:0 16px;scroll-padding:0 16px;bottom:22px}
-.hcard{flex:0 0 100%;max-width:none;height:88px;flex-direction:row;align-items:center;gap:12px;padding:12px 14px;justify-content:flex-start;border-radius:20px;scroll-snap-stop:always}
-.hcard .hnext-ic{width:42px;height:42px;border-radius:13px}
-.hsunc,.hmoney{justify-content:flex-start;gap:12px}
-.hmoney .hnext-t{gap:3px}
-.hctl{bottom:124px}
-.hdots{bottom:8px}
-.hmap .mapboxgl-ctrl-bottom-right{top:auto;bottom:124px;right:4px}
 .gplace{min-height:200px;margin:0 -4px}
 .gplace gmp-place-details{width:100%}
 /* 아이폰 홈 화면 앱에서 화면 맨 아래까지 채우기 (100% 높이가 하단 여백 위에서 끊기는 문제) */
@@ -209,3 +151,42 @@ html.standalone #app{position:absolute;top:0;left:0;right:0;height:var(--appH,10
 /* 하단 탭: 아이콘·글자를 탭 영역 가운데에 */
 nav.tabs{padding-top:0;align-items:flex-start}
 nav.tabs button{height:56px;justify-content:center;gap:4px;padding:0}
+
+/* ===== B: 지도 첫 화면 + 끌어올리는 시트 ===== */
+#mapView{overflow:hidden}
+#mapTop .hhead{position:relative;left:auto;right:auto;top:auto}
+#msheet{position:absolute;left:0;right:0;bottom:0;top:max(34%, calc(env(safe-area-inset-top) + 150px));z-index:5;background:#fff;border-radius:24px 24px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.12);display:flex;flex-direction:column;transition:transform .32s cubic-bezier(.2,.8,.2,1);will-change:transform;transform:translateY(100%)}
+.mfloat{position:absolute;right:12px;top:-56px;display:flex;gap:8px}
+.mfab2{width:44px;height:44px;border-radius:50%;border:0;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.14);display:flex;align-items:center;justify-content:center}
+.mfab2.on{background:#E5484D}
+.msh-head{padding:8px 14px 6px;touch-action:none;flex-shrink:0}
+.msh-grab{width:40px;height:5px;border-radius:3px;background:#D6DCD9;margin:0 auto 8px}
+.msearch2{display:flex;align-items:center;gap:8px;height:44px;border-radius:22px;background:#F2F5F3;padding:0 4px 0 14px}
+.msearch2 input{flex:1;min-width:0;border:0;background:transparent;outline:none;font-size:16px;font-family:inherit;color:#1C2B2E}
+.msearch2 input::-webkit-search-cancel-button{display:none}
+.msclear{display:none;width:36px;height:36px;border:0;background:none;align-items:center;justify-content:center}
+#msheet.hasq .msclear{display:flex}
+#msheet #mapCard{position:static;left:auto;right:auto;bottom:auto;padding:0 14px 4px;flex-shrink:0;z-index:auto}
+#msheet .mcard{box-shadow:none;padding:6px 0;border-radius:0;background:transparent}
+.mnext{display:flex;align-items:center;gap:10px;padding:6px 0;min-height:56px}
+.mnext-main{flex:1;min-width:0;border:0;background:none;padding:0;display:flex;align-items:center;gap:12px;text-align:left;font-family:inherit;color:#1C2B2E}
+.mrow-ic{width:40px;height:40px;border-radius:13px;background:#17806D;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mrow-ic.fav{background:#E5484D;border-radius:50%}
+.mrow-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.mrow-t b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow-t span{font-size:12px;color:#5B6B6E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow-t .mnext-k{color:#17806D;font-weight:700}
+.msh-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:0 14px 24px;border-top:1px solid #EEF0EC}
+.mchips{display:flex;gap:6px;overflow-x:auto;padding:10px 0 6px;scrollbar-width:none}
+.mchips::-webkit-scrollbar{display:none}
+.mchip{flex-shrink:0;height:34px;border-radius:17px;border:0;background:#F2F5F3;color:#1C2B2E;font-size:13px;font-weight:700;padding:0 12px;display:flex;align-items:center;gap:5px;font-family:inherit}
+.mchip.on{background:#17806D;color:#fff}
+.mchip.fav.on{background:#E5484D}
+.mchip .cnt{font-weight:500;opacity:.7}
+.minfo{display:flex;gap:8px;margin:4px 0 6px}
+.minfo button{flex:1;min-width:0;border:0;background:#F6F8F6;border-radius:14px;padding:10px;display:flex;align-items:center;gap:6px;font-size:13px;text-align:left;color:#1C2B2E;font-family:inherit}
+.minfo span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow{width:100%;border:0;background:none;display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #EEF0EC;text-align:left;min-height:58px;font-family:inherit;color:#1C2B2E}
+.mrow-time{width:44px;font-size:13px;color:#5B6B6E;flex-shrink:0}
+.mrow.done .mrow-t b{text-decoration:line-through;color:#8A9597}
+.mrow-r{font-size:12px;color:#5B6B6E;flex-shrink:0}
