@@ -941,6 +941,17 @@ DB.fx = DB.fx || { at: null, rates: {} };
 DB.weather = DB.weather || {};
 let S = DB.trips[DB.cur] || Object.values(DB.trips)[0];
 DB.cur = S.id;
+// 홈 화면 앱(standalone)에서는 iOS가 알려 주는 높이가 짧을 수 있어서 실제 화면 높이로 맞춤
+function fitAppHeight() {
+  const sa = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  document.documentElement.classList.toggle('standalone', !!sa);
+  if (!sa) { document.documentElement.style.removeProperty('--appH'); return; }
+  const portrait = innerHeight >= innerWidth;
+  const full = portrait ? Math.max(screen.height, screen.width) : Math.min(screen.height, screen.width);
+  const h = Math.max(innerHeight, document.documentElement.clientHeight, full);
+  document.documentElement.style.setProperty('--appH', h + 'px');
+}
+fitAppHeight(); addEventListener('resize', fitAppHeight); addEventListener('orientationchange', () => setTimeout(fitAppHeight, 300));
 function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); } catch (e) { toast('저장 공간이 부족해요. 사진 몇 장을 지워 주세요'); } }
 const members = () => (S.trip.members && S.trip.members.length ? S.trip.members : ['나']);
 const won = (n) => '₩ ' + Math.round(n || 0).toLocaleString('ko-KR');
@@ -1426,11 +1437,11 @@ function viewMoney() {
     ${byCat.length ? `<div class="chips">${byCat.map(([v, n]) => `<span class="chip" style="cursor:default">${v} <b class="num">${won(n)}</b></span>`).join('')}</div>` : ''}
     <div class="stack" style="gap:8px">
       <h2>함께 쓴 여행 경비</h2>
-      <span class="small muted">원화로 기록하고, 동행자 전원이 똑같이 나눠 부담해요.</span>
+      <span class="small muted">페소로 적으면 그날 환율로 원화로 바꿔 합쳐요. 동행자 전원이 똑같이 나눠 부담해요.</span>
       ${list.length ? `<div class="card" style="padding:0 6px 0 14px">${list.map((e) => `<div class="list-row" style="gap:10px">
         <span class="micon" style="width:36px;height:36px;border-radius:10px">${svg(EXP_ICON[e.cat] || 'coin', 18, '#17806D')}</span>
         <span class="stack" style="flex:1;min-width:0;gap:1px"><span style="font-size:15px;font-weight:500">${esc(e.title)}</span><span class="small muted">${e.date ? fmtDate(e.date) : ''} · ${esc(e.payer)} 결제 · ${EXP_CATS[e.cat] || ''}${e.orig ? ' · ' + esc(e.orig) : ''}</span></span>
-        <b class="num" style="white-space:nowrap">${won(e.amount)}</b>
+        <span class="stack" style="align-items:flex-end;gap:0"><b class="num" style="white-space:nowrap">${e.cur === 'PHP' ? '₱ ' + (+e.php).toLocaleString('ko-KR') : won(e.amount)}</b>${e.cur === 'PHP' ? `<span class="small muted num" style="white-space:nowrap">${won(e.amount)}</span>` : ''}</span>
         <button class="icon" data-act="editExpense" data-id="${e.id}" aria-label="수정" style="width:34px;height:34px">${svg('edit', 15, '#5B6B6E')}</button>
         <button class="icon" data-act="delExpense" data-id="${e.id}" aria-label="삭제" style="width:34px;height:34px">${svg('close', 15, '#B3412A')}</button>
       </div>`).join('')}</div>` : '<div class="card empty">첫 번째 지출을 기록해 보세요.</div>'}
@@ -1477,12 +1488,33 @@ async function fetchFx(manual) {
     if (S.ui.tab === 'money') render(); if (manual) toast('환율을 새로 받았어요');
   } catch (e) { if (manual) toast('지금은 환율을 받아올 수 없어요. 직접 입력해 주세요'); }
 }
+function expConvText(cur, v, rate) {
+  const n = +v || 0;
+  return cur === 'PHP' ? `≈ ${won(n * rate)} · 1페소 ≈ ${rate.toFixed(1)}원${DB.fx.at ? '' : ' (기본 환율)'}` : (n ? `≈ ₱ ${(n / rate).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}` : '원화로 바로 기록돼요');
+}
+document.addEventListener('input', (ev) => {
+  const f = ev.target.closest && ev.target.closest('form[data-form="expense"]'); if (!f) return;
+  const o = $('#expConv'); if (!o) return;
+  const cur = (f.querySelector('[name=cur]:checked') || {}).value || 'KRW';
+  o.textContent = expConvText(cur, f.querySelector('[name=amount]').value, +o.dataset.rate);
+});
 function expenseForm(existing, preset) {
   const e = existing || Object.assign({ title:'', amount:'', date: tripDays().includes(todayStr()) ? todayStr() : S.trip.start, payer: members()[0], cat:'food' }, preset || {});
+  const cur = existing ? (e.cur === 'PHP' ? 'PHP' : 'KRW') : 'PHP', rate = krwPer('PHP');
+  const val = cur === 'PHP' ? (e.php ?? '') : e.amount;
   openSheet(`<h2 style="margin-bottom:14px">${existing ? '지출 수정' : '지출 기록'}</h2>
     <form class="stack" style="gap:12px" data-form="expense" data-id="${existing ? existing.id : ''}" data-orig="${esc(e.orig || '')}">
       <label class="field">사용 내역<input name="title" required value="${esc(e.title)}" placeholder="예: 망고 셰이크 2잔"></label>
-      <label class="field">금액 (원) · 외화는 원화로 환산해서<input type="number" name="amount" inputmode="numeric" required value="${esc(e.amount)}"></label>
+      <div class="field"><span>금액</span>
+        <div class="row" style="gap:8px">
+          <div class="seg" role="radiogroup" aria-label="통화">
+            <label><input type="radio" name="cur" value="PHP" ${cur === 'PHP' ? 'checked' : ''}><span>₱ 페소</span></label>
+            <label><input type="radio" name="cur" value="KRW" ${cur === 'KRW' ? 'checked' : ''}><span>₩ 원</span></label>
+          </div>
+          <input type="number" name="amount" inputmode="decimal" step="any" required value="${esc(val)}" placeholder="0" style="flex:1;min-width:0" aria-label="금액">
+        </div>
+        <span class="small muted" id="expConv" data-rate="${rate}">${expConvText(cur, val, rate)}</span>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <label class="field">결제일<input type="date" name="date" value="${esc(e.date)}"></label>
         <label class="field">결제한 사람<select name="payer">${members().map((m) => `<option ${m === e.payer ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select></label>
@@ -1689,7 +1721,8 @@ document.addEventListener('submit', async (e) => {
     closeSheet(); save(); render();
   }
   if (kind === 'expense') {
-    const data = { title: str('title'), amount: Math.round(+str('amount') || 0), date: str('date'), payer: str('payer'), cat: str('cat') };
+    const cur = str('cur') === 'PHP' ? 'PHP' : 'KRW', raw = +str('amount') || 0, rate = krwPer('PHP');
+    const data = { title: str('title'), amount: Math.round(cur === 'PHP' ? raw * rate : raw), cur, php: cur === 'PHP' ? raw : null, rate: cur === 'PHP' ? +rate.toFixed(3) : null, date: str('date'), payer: str('payer'), cat: str('cat') };
     if (id) Object.assign(S.expenses.find((x) => x.id === id), data); else S.expenses.push({ id: uid(), orig: form.dataset.orig || '', ...data });
     S.ui.tab = 'money'; closeSheet(); save(); render(); toast('지출을 기록했어요');
   }

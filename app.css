@@ -192,3 +192,16 @@ body.onmap #sbar{height:calc(env(safe-area-inset-top) + 18px);background:linear-
 #app{position:fixed;top:0;bottom:0;left:0;right:0;height:auto;min-height:100%}
 @supports (height:100dvh){#app{min-height:100dvh}}
 html,body{min-height:100%;min-height:-webkit-fill-available}
+
+.seg{display:flex;background:#EEF1EF;border-radius:12px;padding:3px;flex-shrink:0}
+.seg label{position:relative}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:flex;align-items:center;height:38px;padding:0 12px;border-radius:9px;font-size:14px;font-weight:700;color:#5B6B6E;cursor:pointer}
+.seg input:checked+span{background:#fff;color:#17806D;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.seg input:focus-visible+span{outline:2px solid #17806D}
+/* 아이폰 홈 화면 앱: 상태바를 투명하게 쓰면 iOS가 화면 높이를 상태바만큼 짧게 알려 주는 버그가 있어
+   실제 화면 높이(--appH)로 강제로 채움. 혹시 남는 틈도 탭 바와 같은 흰색으로 */
+html,body{background:#fff}
+@media (display-mode: standalone){ html,body{background:#fff} }
+#app{height:var(--appH,auto)}
+.standalone #app{bottom:auto}
