@@ -37,6 +37,7 @@ const I = {
   back:'<path d="M15 18l-6-6 6-6"/>',
   search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   crosshair:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
+  wallet:'<path d="M4 7h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 7l11-3v3M16 13h2"/>',
   heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
   chev:'<path d="M9 6l6 6-6 6"/>', chevd:'<path d="M6 9l6 6 6-6"/>',
   nav:'<path d="M3 11l19-9-9 19-2-8-8-2z"/>',
@@ -220,28 +221,25 @@ const walkInfo = (p) => {
   const m = Math.hypot((p.lng - userPos.lng) * 108900, (p.lat - userPos.lat) * 110600) * 1.3; // 직선거리 × 1.3 (길 굴곡 보정)
   return { min: Math.max(1, Math.round(m / 75)), dist: m >= 1000 ? (m / 1000).toFixed(1) + 'km' : Math.round(m / 10) * 10 + 'm' };
 };
-// 여행 진행도: 4박5일 동안 해가 왼쪽에서 떠서 오른쪽으로 짐
-function tripArc(days, before, dleft) {
-  const n = days.length || 1, W = 320, H = 62, L = 14, R = W - 14, Y = 46, top = 12;
-  const start = dateObj(days[0]).getTime() - 12 * 3600e3, end = start + n * 864e5;
-  const f = Math.max(0, Math.min(1, (Date.now() - start) / (end - start)));
-  const pt = (t) => [L + (R - L) * t, Y - (Y - top) * Math.sin(Math.PI * t)];
-  const path = (a, b) => { let d = ''; for (let i = 0; i <= 40; i++) { const [x, y] = pt(a + (b - a) * i / 40); d += (i ? ' L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1); } return d; };
-  const [sx, sy] = pt(before ? 0 : f), after = f >= 1;
-  const labels = days.map((d, i) => { const x = L + (R - L) * (i + 0.5) / n, on = !before && !after && f * n >= i && f * n < i + 1;
-    return `<text x="${x.toFixed(1)}" y="${H - 3}" text-anchor="middle" style="font:${on ? 700 : 500} 10px 'Space Grotesk','Noto Sans KR',sans-serif;fill:${on ? '#C2502C' : '#7C8789'}">D${i + 1}</text>`; }).join('');
-  const ticks = days.slice(1).map((d, i) => { const x = L + (R - L) * (i + 1) / n; return `<line x1="${x.toFixed(1)}" y1="${Y - 3}" x2="${x.toFixed(1)}" y2="${Y + 3}" stroke="#D3D9D6" stroke-width="1.5"/>`; }).join('');
-  const cap = before ? `출발까지 D-${dleft}` : after ? '여행 끝 · 수고했어요' : `${Math.min(n, Math.floor(f * n) + 1)}일차 · ${Math.round(f * 100)}%`;
-  return `<div class="harc"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="여행 진행도 ${esc(cap)}">
-    <defs><linearGradient id="arcg" x1="0" x2="1"><stop offset="0" stop-color="#F6C453"/><stop offset="1" stop-color="#E8743B"/></linearGradient></defs>
-    <path d="${path(0, 1)}" fill="none" stroke="#E3E8E5" stroke-width="2" stroke-dasharray="3 4"/>
-    ${!before && f > 0 ? `<path d="${path(0, f)}" fill="none" stroke="url(#arcg)" stroke-width="3" stroke-linecap="round"/>` : ''}
-    <line x1="${L - 6}" y1="${Y}" x2="${R + 6}" y2="${Y}" stroke="#C9D2CE" stroke-width="1.5"/>${ticks}
-    ${before ? `<clipPath id="hz"><rect x="0" y="0" width="${W}" height="${Y}"/></clipPath><g clip-path="url(#hz)"><circle cx="${sx}" cy="${Y + 2}" r="9" fill="#F6C453" opacity=".9"/></g>`
-      : `<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="13" fill="#F6C453" opacity=".25"/><circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="7.5" fill="${after ? '#E8743B' : '#F6A93B'}" stroke="#fff" stroke-width="2"/>`}
-    ${labels}
-    <text x="${R}" y="10" text-anchor="end" style="font:700 11px 'Noto Sans KR',sans-serif;fill:#17806D">${esc(cap)}</text>
-  </svg></div>`;
+// 여행 진행도: O - O - O - O - O. 첫날 해가 떠서 점점 붉게 지고 마지막 날은 달이 됨
+const JOUR_COL = ['#F7C948', '#F5A83B', '#EE8636', '#D9614A', '#46598C'];
+function jourIcon(i, n, on, past) {
+  const t = n > 1 ? i / (n - 1) : 0, c = JOUR_COL[Math.round(t * (JOUR_COL.length - 1))];
+  const r = on ? 11 : 8, op = on || past ? 1 : 0.38;
+  if (i === n - 1) // 마지막 날: 달
+    return `<svg width="${r * 2 + 6}" height="${r * 2 + 6}" viewBox="-14 -14 28 28" aria-hidden="true" style="opacity:${op}">${on ? `<circle r="13" fill="${c}" opacity=".18"/>` : ''}<circle r="${r}" fill="${c}"/><circle cx="${r * 0.45}" cy="${-r * 0.35}" r="${r * 0.85}" fill="#fff"/></svg>`;
+  return `<svg width="${r * 2 + 6}" height="${r * 2 + 6}" viewBox="-14 -14 28 28" aria-hidden="true" style="opacity:${op}">${on ? `<circle r="13" fill="${c}" opacity=".22"/>` : ''}<circle r="${r}" fill="${c}"/>${i === 0 ? `<rect x="-14" y="${r * 0.35}" width="28" height="14" fill="#fff" opacity=".55"/>` : ''}</svg>`;
+}
+function tripJourney(days, before, dleft) {
+  const n = days.length || 1, today = todayStr();
+  const cur = before ? -1 : days.indexOf(today) >= 0 ? days.indexOf(today) : (today > days[n - 1] ? n : -1);
+  const parts = days.map((d, i) => {
+    const on = i === cur, past = cur > i;
+    const seg = i < n - 1 ? `<span class="jline" style="background:${past || on ? `linear-gradient(90deg, ${JOUR_COL[Math.round(i / (n - 1) * 4)]}, ${JOUR_COL[Math.round((i + 1) / (n - 1) * 4)]})` : '#E3E8E5'}"></span>` : '';
+    return `<button class="jnode${on ? ' on' : ''}" data-act="homeDay" data-day="${d}" aria-label="D${i + 1} ${fmtDate(d)}${on ? ' 오늘' : ''}">${jourIcon(i, n, on, past)}<span>D${i + 1}</span></button>${seg}`;
+  }).join('');
+  const cap = before ? `D-${dleft}` : cur >= n ? '끝' : `D${cur + 1}`;
+  return `<span class="jcap">${cap}</span><div class="jrow">${parts}</div>`;
 }
 function viewHome() {
   const day = currentDay(), t = sunTimes(day), now = new Date(), days = tripDays();
@@ -264,38 +262,31 @@ function viewHome() {
   return `
   <div class="hmap">
     <div class="hmapbg">${homeMbState === 'failed' ? `<button class="hfail" data-act="homeRetry">${svg('map', 18, G)}지도를 불러오지 못했어요 · 다시 시도</button>` : ''}</div>
-    <div class="hhead hhead2">
-      <div class="between" style="gap:8px">
-        <button data-act="trips" class="hhead-t"><b>${esc(S.trip.name)}</b></button>
-        <button class="icon" data-act="tab" data-tab="sunset" aria-label="선셋 알람" style="width:40px;height:40px">${svg('bell', 22, '#1C2B2E')}</button>
-      </div>
-      ${tripArc(days, before, dleft)}
-    </div>
+    <div class="hhead hjour">${tripJourney(days, before, dleft)}
+      <button class="icon" data-act="tab" data-tab="sunset" aria-label="선셋 알람" style="width:36px;height:36px;flex-shrink:0">${svg('bell', 20, '#1C2B2E')}</button></div>
   </div>
   <div class="hctl"><button class="hfab" data-act="homeFit" aria-label="화이트비치로 돌아가기">${svg('crosshair', 18, '#1C2B2E')}</button>
     <button class="hbig" data-act="tab" data-tab="map">${svg('map', 16, G)}지도 탭</button></div>
   <div class="hcards" id="hcards">
     <div class="hcard">
-      ${next ? `<div class="hnext2">
-        <span class="hnext-ic">${svg(np ? (CAT_ICON[np.cat] || 'pin') : 'list', 22, '#fff')}</span>
-        <button data-act="${np ? 'openPlace' : 'tab'}" data-id="${np ? np.id : ''}" data-tab="todo" class="hnext-t">
-          <span style="font-size:12px;color:${G};font-weight:700">다음 일정${next.time ? ' · ' + esc(next.time) : ''}</span>
-          <b>${esc(next.title)}</b>
-          <span class="muted" style="font-size:12px">${np ? esc(np.name) : '장소 없음'}${wi ? ` · 도보 ${wi.min}분` : ''}</span>
-        </button>
-        ${np && np.lat ? `<button class="hnav2" data-act="navTo" data-id="${np.id}" aria-label="길안내">${svg('nav', 20, '#1A73E8')}</button>` : ''}
-      </div>` : `<div class="hnext2"><span class="muted" style="font-size:14px">남은 일정이 없어요</span></div>`}
-      <div class="hchips"><button class="hchip" data-act="tab" data-tab="todo">D${di + 1} · ${fmtDate(day).slice(0, -4)}</button><button class="hchip" data-act="tab" data-tab="todo">할 일 ${done}/${list.length}</button>${tk ? `<button class="hchip" data-act="openTicket" data-id="${tk.id}">${svg(TCAT_ICON[tk.cat] || 'ticket', 13, '#5B6B6E')}${esc(tk.title)}</button>` : ''}</div>
+      <span class="hnext-ic">${svg(np ? (CAT_ICON[np.cat] || 'pin') : 'list', 20, '#fff')}</span>
+      ${next ? `<button data-act="${np ? 'openPlace' : 'tab'}" data-id="${np ? np.id : ''}" data-tab="todo" class="hnext-t">
+        <span style="font-size:12px;color:${G};font-weight:700">다음 일정${next.time ? ' · ' + esc(next.time) : ''} · D${di + 1} 할 일 ${done}/${list.length}</span>
+        <b>${esc(next.title)}</b>
+        <span class="muted" style="font-size:12px">${np ? esc(np.name) : '장소 없음'}${wi ? ` · 도보 ${wi.min}분` : ''}</span>
+      </button>
+      ${np && np.lat ? `<button class="hnav2" data-act="navTo" data-id="${np.id}" aria-label="길안내">${svg('nav', 20, '#1A73E8')}</button>` : ''}` : `<span class="muted" style="font-size:14px;flex:1">남은 일정이 없어요</span>`}
     </div>
     <button class="hcard hsunc" data-act="tab" data-tab="sunset">
-      <span class="small" style="opacity:.85">${before ? '첫날' : '오늘'} 일몰 · ${countdown}</span>
-      <b class="num" style="font-size:34px;line-height:1.1">${fmtTime(t.set)}</b>
-      <span style="font-size:13px">${sunTxt}</span>
+      <span class="hnext-ic" style="background:rgba(255,255,255,.18)">${svg('sun', 20, '#fff')}</span>
+      <span class="hnext-t"><span style="font-size:12px;opacity:.85">${before ? '첫날' : '오늘'} 일몰 · ${countdown}</span><b class="num" style="font-size:22px">${fmtTime(t.set)}</b><span style="font-size:12px;opacity:.9">${sunTxt}</span></span>
+      ${svg('chev', 18, '#fff')}
     </button>
     <button class="hcard hmoney" data-act="tab" data-tab="money">
-      <span class="small muted">사용한 경비${bud ? ` · 예산의 ${pct}%` : ''}</span>
-      <b class="num" style="font-size:24px">${won(st.total)}</b>
-      ${bud ? `<span class="hbar2"><i style="width:${pct}%"></i></span><span class="small muted">남은 예산 ${won(bud - st.total)}${todaySpend ? ` · 오늘 ${won(todaySpend)}` : ''}</span>` : '<span class="small muted">예산을 정하면 남은 금액이 보여요</span>'}
+      <span class="hnext-ic" style="background:#E6F3EF">${svg('wallet', 20, G)}</span>
+      <span class="hnext-t"><span class="small muted">사용한 경비${bud ? ` · 예산의 ${pct}%` : ''}</span><b class="num" style="font-size:20px">${won(st.total)}</b>
+      ${bud ? `<span class="hbar2"><i style="width:${pct}%"></i></span>` : '<span class="small muted">예산을 정하면 남은 금액이 보여요</span>'}</span>
+      ${svg('chev', 18, '#9AA5A7')}
     </button>
   </div>
   <div class="hdots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>`;

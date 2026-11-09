@@ -169,6 +169,20 @@ body.onmap #sbar{height:calc(env(safe-area-inset-top) + 18px);background:linear-
 .hdots i{display:block;width:6px;height:6px;border-radius:3px;background:#B8C4C0;transition:width .2s}
 .hdots i.on{width:18px;background:#17806D}
 
-.hhead2{flex-direction:column;align-items:stretch;gap:0;padding:8px 8px 6px 16px}
-.harc{margin:-4px 4px 0 -4px}
-.harc svg{display:block;overflow:visible}
+
+/* 홈 v3: 얇은 한 줄 여정 헤더 + 한 장씩 넘기는 얇은 카드 */
+.hjour{padding:6px 6px 6px 14px;gap:8px;align-items:center;border-radius:22px;height:52px;box-sizing:border-box}
+.jcap{font:700 12px 'Space Grotesk','Noto Sans KR',sans-serif;color:#17806D;background:#E6F3EF;border-radius:10px;padding:4px 8px;flex-shrink:0}
+.jrow{flex:1;min-width:0;display:flex;align-items:center}
+.jnode{border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0;min-width:28px}
+.jnode span{font:600 9px 'Space Grotesk',sans-serif;color:#9AA5A7;line-height:1;margin-top:1px}
+.jnode.on span{color:#1C2B2E}
+.jline{flex:1;height:2px;border-radius:1px;margin:0 2px 10px}
+.hcards{gap:16px;padding:0 16px;scroll-padding:0 16px;bottom:22px}
+.hcard{flex:0 0 100%;max-width:none;height:88px;flex-direction:row;align-items:center;gap:12px;padding:12px 14px;justify-content:flex-start;border-radius:20px;scroll-snap-stop:always}
+.hcard .hnext-ic{width:42px;height:42px;border-radius:13px}
+.hsunc,.hmoney{justify-content:flex-start;gap:12px}
+.hmoney .hnext-t{gap:3px}
+.hctl{bottom:124px}
+.hdots{bottom:8px}
+.hmap .mapboxgl-ctrl-bottom-right{top:auto;bottom:124px;right:4px}
