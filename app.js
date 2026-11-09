@@ -240,7 +240,7 @@ function tripJourney(days, before, dleft) {
     return `<button class="jnode${on ? ' on' : ''}" data-act="homeDay" data-day="${d}" aria-label="D${i + 1} ${fmtDate(d)}${on ? ' 오늘' : ''}">${jourIcon(i, n, on, past)}<span>D${i + 1}</span></button>${seg}`;
   }).join('');
   const cap = before ? `D-${dleft}` : cur >= n ? '끝' : `D${cur + 1}`;
-  return `<span class="jcap">${cap}</span><div class="jrow">${parts}</div>`;
+  return `<button class="jcap" data-act="diagTap" style="border:0">${cap}</button><div class="jrow">${parts}</div>`;
 }
 function viewHome() {
   const day = currentDay(), t = sunTimes(day), now = new Date(), days = tripDays();
@@ -941,17 +941,26 @@ DB.fx = DB.fx || { at: null, rates: {} };
 DB.weather = DB.weather || {};
 let S = DB.trips[DB.cur] || Object.values(DB.trips)[0];
 DB.cur = S.id;
-// 홈 화면 앱(standalone)에서는 iOS가 알려 주는 높이가 짧을 수 있어서 실제 화면 높이로 맞춤
+// 홈 화면 앱(standalone)에서는 iOS가 알려 주는 높이가 상태바만큼 짧을 수 있어서 실제 화면 높이로 맞춤
+const isStandalone = () => window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
 function fitAppHeight() {
-  const sa = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
-  document.documentElement.classList.toggle('standalone', !!sa);
-  if (!sa) { document.documentElement.style.removeProperty('--appH'); return; }
+  const sa = isStandalone(), root = document.documentElement;
+  root.classList.toggle('standalone', sa);
+  if (!sa) { root.style.removeProperty('--appH'); return; }
   const portrait = innerHeight >= innerWidth;
   const full = portrait ? Math.max(screen.height, screen.width) : Math.min(screen.height, screen.width);
-  const h = Math.max(innerHeight, document.documentElement.clientHeight, full);
-  document.documentElement.style.setProperty('--appH', h + 'px');
+  root.style.setProperty('--appH', Math.max(innerHeight, full) + 'px');
+  if (scrollY) scrollTo(0, 0);
 }
 fitAppHeight(); addEventListener('resize', fitAppHeight); addEventListener('orientationchange', () => setTimeout(fitAppHeight, 300));
+addEventListener('scroll', () => { if (isStandalone() && scrollY) scrollTo(0, 0); });
+// 화면 정보 확인용 (D-day 칩을 5번 연속 누르면 표시)
+let diagTaps = 0, diagT = 0;
+function showDiag() {
+  const p = document.createElement('div'); p.style.cssText = 'position:absolute;visibility:hidden;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)'; document.body.appendChild(p);
+  const cs = getComputedStyle(p), info = `화면 ${screen.width}×${screen.height} · 창 ${innerWidth}×${innerHeight} · 문서 ${document.documentElement.clientHeight} · 보이는 ${visualViewport ? Math.round(visualViewport.height) : '-'} · 앱 ${document.getElementById('app').offsetHeight} · 위 ${cs.paddingTop} 아래 ${cs.paddingBottom} · ${isStandalone() ? '홈화면앱' : '브라우저'}`;
+  p.remove(); openSheet(`<h2 style="margin-bottom:10px">화면 정보</h2><p style="font-size:14px;line-height:1.7;word-break:keep-all">${info}</p><p class="small muted" style="margin-top:8px">이 화면을 캡처해서 보내 주세요</p>`);
+}
 function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); } catch (e) { toast('저장 공간이 부족해요. 사진 몇 장을 지워 주세요'); } }
 const members = () => (S.trip.members && S.trip.members.length ? S.trip.members : ['나']);
 const won = (n) => '₩ ' + Math.round(n || 0).toLocaleString('ko-KR');
@@ -1978,6 +1987,7 @@ document.addEventListener('click', (e) => {
   switch (a) {
     case 'tab': closeSheet(); if (POI) closePoi(true); S.ui.tab = b.dataset.tab; rerender(); break;
     case 'poiClose': closePoi(); break;
+    case 'diagTap': { const now = Date.now(); diagTaps = now - diagT < 600 ? diagTaps + 1 : 1; diagT = now; if (diagTaps >= 5) { diagTaps = 0; showDiag(); } break; }
     case 'favSheet': favSheet(); break;
     case 'favGo': { const p = placeById(id); closeSheet(); if (!p) break; if (!p.lat) { toast('위치를 확인하는 중이에요. 잠시 후 다시 눌러 주세요'); resolveFavs(); break; } if (POI) closePoi(true); S.ui.selPlace = p.id; save(); refreshMap(); whenMapReady(() => map.flyTo({ center: [p.lng, p.lat], zoom: Math.max(map.getZoom(), 16.5), padding: { top: headerH(), bottom: bottomH() + 120, left: 0, right: 0 } })); break; }
     case 'favToggle': { const p = placeById(id); if (!p) break; toggleFav(p); if (b.dataset.sheet) placeSheet(p); if (S.ui.tab === 'map') { refreshMap(); renderMapCats(); } else rerender(); break; }
