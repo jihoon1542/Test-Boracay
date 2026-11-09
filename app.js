@@ -199,6 +199,7 @@ function render() {
   renderTabs();
   const isMap = S.ui.tab === 'map';
   $('#mapView').style.display = isMap ? 'block' : 'none';
+  document.body.classList.toggle('onmap', isMap || S.ui.tab === 'home');
   $('#view').style.display = isMap ? 'none' : 'block';
   if (isMap) { renderMap(); return; }
   $('#view').style.background = S.ui.tab === 'home' ? '#fff' : '';
@@ -207,6 +208,7 @@ function render() {
   $('#view').innerHTML = ({ home: viewHome, todo: viewTodo, sunset: viewSunset, tickets: viewTickets, money: viewMoney, more: viewMore, places: viewPlaces, check: viewCheck, journal: viewJournal }[S.ui.tab] || viewHome)();
   if (S.ui.tab === 'money') updateFx();
   $('#view').classList.toggle('vhome', S.ui.tab === 'home');
+  document.body.classList.toggle('onmap', S.ui.tab === 'home');
   if (S.ui.tab === 'home') mountHomeMap();
   hydrateImages();
 }
@@ -267,51 +269,13 @@ function viewHome() {
       </button>
       ${np && np.lat ? `<button class="hnav" data-act="navTo" data-id="${np.id}" aria-label="길찾기" style="border:0">${svg('nav', 22, G)}</button>` : ''}
     </div>` : `<div class="hnext" style="justify-content:center"><span class="muted" style="font-size:14px">남은 일정이 없어요 · 지도에서 장소를 담아 보세요</span></div>`}
-    <div class="htiles">
-      <button class="hsun" data-act="tab" data-tab="sunset">
-        <span style="font-size:12px;color:#CDEDE5">${before ? '첫날' : '오늘'} 일몰</span>
-        <b class="num" style="font-size:36px;line-height:1.05">${fmtTime(t.set)}</b>
-        <span style="font-size:12px;color:#E2F5EF">${countdown}</span>
-        <span class="hbar"><i style="width:${(frac * 100).toFixed(0)}%"></i></span>
-        <span style="font-size:11px;color:#CDEDE5">${S.alarm.off[day] ? '알람 꺼짐' : `알람 ${fmtTime(new Date(t.set - S.alarm.offset * 60000))}`}${wxNowText() ? ' · ' + wxNowText() : ''}</span>
-      </button>
-      <div style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:0">
-        <button class="htile" data-act="tab" data-tab="todo">
-          <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="none" stroke="#E3E6E3" stroke-width="9"/>${ring ? `<circle cx="32" cy="32" r="26" fill="none" stroke="${GL}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${ring} 200" transform="rotate(-90 32 32)"/>` : ''}</svg>
-          <span style="display:flex;flex-direction:column;align-items:flex-start"><span class="small muted">할 일</span><b class="num" style="font-size:17px">${done} / ${list.length}</b></span>
-        </button>
-        <button class="htile" data-act="${tk ? 'openTicket' : 'tab'}" data-id="${tk ? tk.id : ''}" data-tab="tickets">
-          <span style="width:40px;height:40px;border-radius:12px;background:${MINT_BG};display:flex;align-items:center;justify-content:center;flex-shrink:0">${svg(tk ? TCAT_ICON[tk.cat] : 'ticket', 20, G)}</span>
-          <span style="display:flex;flex-direction:column;align-items:flex-start;min-width:0;max-width:100%"><b style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${tk ? esc(tk.title) : '티켓 없음'}</b><span class="small muted" style="white-space:nowrap">${tk ? `${fmtDate(tk.date).slice(0, -4)} ${esc(tk.time)}` : '추가하기'}</span></span>
-        </button>
-      </div>
-    </div>
-    ${homeExtra()}
-    <div class="between" style="margin-top:4px"><h2>${before ? '첫날' : '오늘'} 할 일</h2><button class="chip" data-act="tab" data-tab="todo" style="height:32px">전체 ›</button></div>
-    <div>${list.length ? list.slice(0, 4).map((it) => `<div class="hrow">
-      <button class="icon" data-act="toggle" data-id="${it.id}" aria-label="완료 표시" style="width:40px;height:40px"><span class="check ${it.done ? 'on' : ''}" style="border-radius:7px">${it.done ? svg('check', 14, '#fff', 3) : ''}</span></button>
-      <span class="num muted" style="width:44px;font-size:14px">${esc(it.time || '--:--')}</span>
-      <span style="flex:1;min-width:0;display:flex;flex-direction:column"><span class="${it.done ? 'done-text' : ''}" style="font-size:15px;font-weight:500">${esc(it.title)} ${it.sunset ? '<span class="tag">선셋</span>' : ''}</span>
-      ${placeById(it.placeId) ? `<span class="small muted">${esc(placeById(it.placeId).name)}</span>` : ''}</span></div>`).join('') : '<div class="empty">아직 할 일이 없어요</div>'}</div>
+    <button class="hsun2" data-act="tab" data-tab="sunset">
+      <span class="hsun2-ic">${svg('sun', 20, '#fff')}</span>
+      <span style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px">
+        <span style="font-size:12px;opacity:.85">${before ? '첫날' : '오늘'} 일몰 · ${countdown}</span>
+        <b style="font-size:17px"><span class="num">${fmtTime(t.set)}</span><span style="font-size:13px;font-weight:500;opacity:.9"> · ${S.alarm.off[day] ? '알람 꺼짐' : `알람 ${fmtTime(new Date(t.set - S.alarm.offset * 60000))}`}${wxNowText() ? ' · ' + wxNowText() : ''}</span></b>
+      </span>${svg('chev', 18, '#fff')}</button>
   </div></div>`;
-}
-function homeExtra() {
-  const st = S.expenses.reduce((a, e) => a + (+e.amount || 0), 0), bud = +S.trip.budget || 0;
-  const ck = S.checklist, cd = ck.filter((x) => x.done).length;
-  return `<div class="htiles">
-    <button class="htile" data-act="tab" data-tab="money" style="flex-direction:column;align-items:flex-start;gap:4px">
-      <span class="small muted">사용한 경비</span><b class="num" style="font-size:15px;white-space:nowrap">${won(st)}</b>
-      ${bud ? `<span class="hbar" style="background:#E3E6E3;margin:2px 0 0"><i style="width:${Math.min(100, Math.round(st / bud * 100))}%;background:#2DAA8A"></i></span>` : '<span class="small muted">예산 미설정</span>'}
-    </button>
-    <button class="htile" data-act="tab" data-tab="check" style="flex-direction:column;align-items:flex-start;gap:4px">
-      <span class="small muted">짐 싸기</span><b class="num" style="font-size:16px">${cd} / ${ck.length}</b>
-      <span class="hbar" style="background:#E3E6E3;margin:2px 0 0"><i style="width:${ck.length ? Math.round(cd / ck.length * 100) : 0}%;background:#2DAA8A"></i></span>
-    </button>
-    <button class="htile" data-act="tab" data-tab="places" style="flex-direction:column;align-items:flex-start;gap:4px">
-      <span class="small muted">가고 싶은 곳</span><b class="num" style="font-size:16px">${S.places.filter((p) => !p.visited).length}곳</b>
-      <span class="small muted">꼭 가기 ${S.places.filter((p) => p.priority === 'must' && !p.visited).length}</span>
-    </button>
-  </div>`;
 }
 function nextTicket() {
   const t = todayStr();
