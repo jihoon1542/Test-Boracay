@@ -1421,7 +1421,7 @@ function todoRow(it, withActions) {
       <span style="font-size:15px;font-weight:500" class="${it.done ? 'done-text' : ''}">${esc(it.title)} ${it.sunset ? '<span class="tag">선셋</span>' : ''}</span>
       ${p ? `<button data-act="openPlace" data-id="${p.id}" class="row small muted" style="gap:4px;border:0;background:none;padding:0;text-align:left">${svg('pin', 12)}${esc(p.name)}</button>` : it.where ? `<span class="row small muted" style="gap:4px">${svg('pin', 12)}${esc(it.where)}</span>` : ''}
       ${it.note ? `<span class="small muted" style="white-space:pre-wrap">${esc(it.note)}</span>` : ''}
-      <button data-act="showOnMap" data-id="${it.id}" class="row small" style="gap:4px;border:0;background:none;padding:0;color:#17806D;font-weight:700;margin-top:2px;min-height:28px;text-align:left">${svg('map', 13, '#17806D')}${p && p.lat ? '지도에서 보기' : '지도에 위치 정하기'}</button>
+      <span class="row" style="gap:14px;margin-top:2px"><button data-act="showOnMap" data-id="${it.id}" class="row small" style="gap:4px;border:0;background:none;padding:0;color:#17806D;font-weight:700;min-height:32px;text-align:left">${svg('map', 13, '#17806D')}${p && p.lat ? '지도에서 보기' : '지도에 위치 정하기'}</button>${p && p.lat ? `<button data-act="navTo" data-id="${p.id}" class="row small" style="gap:4px;border:0;background:none;padding:0;color:#1A73E8;font-weight:700;min-height:32px">${svg('nav', 13, '#1A73E8')}길안내</button>` : ''}</span>
     </div>
     ${withActions ? `<button class="icon" data-act="editTodo" data-id="${it.id}" aria-label="수정">${svg('edit', 18, '#5B6B6E')}</button>
     <button class="icon" data-act="delTodo" data-id="${it.id}" aria-label="삭제">${svg('trash', 18, '#B3412A')}</button>` : ''}
@@ -1440,7 +1440,6 @@ function viewTodo() {
       <span class="small">${S.alarm.off[day] ? '알람 꺼짐' : `알람 ${S.alarm.offset}분 전`}</span>
     </button>
     <div class="stack">${list.length ? list.map((x) => todoRow(x, true)).join('') : '<div class="empty">아직 일정이 없어요. 아래 버튼이나 지도에서 장소를 담아 보세요.</div>'}</div>
-    ${list.some((x) => { const pp = placeById(x.placeId); return pp && pp.lat; }) ? `<button class="btn ghost" data-act="dayOnMap" data-day="${day}">${svg('map', 18, '#17806D')} 이날 동선 지도에서 보기</button>` : ''}
     <button class="btn" data-act="addTodo">${svg('plus', 18, '#fff', 2.5)} 일정 추가</button>
   </div>`;
 }
@@ -2296,7 +2295,7 @@ document.addEventListener('click', (e) => {
     case 'delMenu': { const p = placeById(b.dataset.pid); p.menu = p.menu.filter((m) => m.id !== id); save(); placeSheet(p); break; }
     case 'placeToDay': { const p = placeById(id); todosOf(b.dataset.day).push({ id: uid(), time: '', title: p.name, placeId: p.id, done: false }); save(); closeSheet(); render(); refreshMap(); toast(`D${dayIndex(b.dataset.day)} 일정에 담았어요`); break; }
     case 'placeToTodo': todoForm(null, placeById(id)); break;
-    case 'pfilter': S.ui.placeFilter = b.dataset.f; save(); renderMapCats(); refreshMap(); if (b.dataset.f !== 'all') fitFiltered(); break;
+    case 'pfilter': S.ui.placeFilter = b.dataset.f; S.ui.selPlace = null; if (POI) closePoi(true); save(); renderMapCats(); refreshMap(); if (b.dataset.f !== 'all') fitFiltered(); break;
     case 'selPlace': S.ui.selPlace = id; save(); refreshMap(); break;
     case 'searchPick': { const p = placeById(id); S.ui.selPlace = id; if (p.cat && S.ui.placeFilter !== 'all' && S.ui.placeFilter !== p.cat) S.ui.placeFilter = 'all'; $('#placeSearch').value = ''; $('#searchResults').style.display = 'none'; save(); renderMap(); if (p.lat && view) centerOn(p); break; }
     case 'routeSheet': routeSheet(); break;
