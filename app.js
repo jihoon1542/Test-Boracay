@@ -38,6 +38,7 @@ const I = {
   search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   crosshair:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
   wallet:'<path d="M4 7h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 7l11-3v3M16 13h2"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
   chev:'<path d="M9 6l6 6-6 6"/>', chevd:'<path d="M6 9l6 6 6-6"/>',
   nav:'<path d="M3 11l19-9-9 19-2-8-8-2z"/>',
@@ -270,7 +271,7 @@ function viewHome() {
   <div class="hcards" id="hcards">
     <div class="hcard">
       <span class="hnext-ic">${svg(np ? (CAT_ICON[np.cat] || 'pin') : 'list', 20, '#fff')}</span>
-      ${next ? `<button data-act="${np ? 'openPlace' : 'tab'}" data-id="${np ? np.id : ''}" data-tab="todo" class="hnext-t">
+      ${next ? `<button data-act="${np ? 'openPlace' : 'todoInfo'}" data-id="${np ? np.id : next.id}" class="hnext-t">
         <span style="font-size:12px;color:${G};font-weight:700">다음 일정${next.time ? ' · ' + esc(next.time) : ''} · D${di + 1} 할 일 ${done}/${list.length}</span>
         <b>${esc(next.title)}</b>
         <span class="muted" style="font-size:12px">${np ? esc(np.name) : '장소 없음'}${wi ? ` · 도보 ${wi.min}분` : ''}</span>
@@ -566,7 +567,7 @@ function loadMapbox() {
 function initMap() {
   try {
     mapboxgl.accessToken = MAPBOX_TOKEN;
-    map = new mapboxgl.Map({ container: 'mapbox', style: MAPBOX_STYLE, center: [121.9235, 11.9650], zoom: 14.6, minZoom: 13, maxZoom: 19, maxBounds: BORACAY.bounds, attributionControl: true });
+    map = new mapboxgl.Map({ container: 'mapbox', style: MAPBOX_STYLE, center: [121.9235, 11.9650], zoom: 14.6, minZoom: 12.5, maxZoom: 19, maxBounds: BORACAY.bounds, attributionControl: true });
   } catch (e) { mapboxFailed(); return; }
   let loaded = false;
   map.on('load', () => {
@@ -1226,51 +1227,73 @@ function placeForm(existing, lngLat) {
       <button class="btn" type="submit">저장하기</button>
     </form>`);
 }
+// 장소 창: Google 장소 정보(사진·평점·리뷰·영업시간)가 중심. 메뉴는 식당·카페만
+const isEatery = (p) => p.cat === 'food' || p.cat === 'cafe';
 function placeSheet(p) {
-  const days = tripDays(), rate = krwPer('PHP');
+  if (!p) return;
+  const days = tripDays(), rate = krwPer('PHP'), useG = GOOGLE_KEY && !gAuthFail && p.lat;
   const link = p.url || gSearch(p.lat ? p : { q: p.name + ' ' + (p.area || S.trip.city || '') });
-  openSheet(`
-    <div class="between"><span class="small" style="color:var(--coralink);font-weight:500">${CATS[p.cat] || '장소'}${p.priority === 'must' ? ' · 꼭 가기' : ''}</span>
-      <span class="row" style="gap:0"><button class="icon" data-act="favToggle" data-id="${p.id}" data-sheet="1" aria-label="즐겨찾기">${svg('heart', 20, p.fav ? '#E5484D' : '#9AA5A7', 2.2)}</button><button class="icon" data-act="editPlace" data-id="${p.id}" aria-label="장소 수정">${svg('edit', 18, '#5B6B6E')}</button>
-      <button class="icon" data-act="delPlace" data-id="${p.id}" aria-label="장소 삭제">${svg('trash', 18, '#B3412A')}</button></span></div>
-    <h2 style="font-size:22px">${esc(p.name)}</h2>
-    <p class="muted small" style="margin:4px 0 12px">${esc(p.area || '')}${p.hours ? ' · 영업 ' + esc(p.hours) : ''}</p>
-    <label class="mthumb" style="width:100%;height:150px;margin-bottom:12px;cursor:pointer;flex-direction:column;gap:6px;color:#17806D;font-size:13px;font-weight:500">
-      ${p.photo ? `<img data-img="${p.photo}" alt="${esc(p.name)} 사진">` : `${svg('img', 28, '#17806D')}사진 추가`}
-      <input type="file" accept="image/*" data-photo="${p.id}" style="display:none"></label>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-      ${p.lat ? `<button class="btn ghost" data-act="placeOnMap" data-id="${p.id}" style="height:44px">${svg('map', 16, '#17806D')} 지도에서 보기</button>` : `<a class="btn ghost" href="${link}" target="_blank" rel="noopener" style="text-decoration:none;height:44px">${svg('map', 16, '#17806D')} 구글에서 찾기 ↗</a>`}
-      ${p.lat ? `<button class="btn ghost" data-act="navTo" data-id="${p.id}" style="height:44px">${svg('nav', 16, '#17806D')} 길찾기</button>`
-        : `<button class="btn ghost" data-act="visitPlace" data-id="${p.id}" style="height:44px">${p.visited ? '방문 취소' : '방문 완료'}</button>`}
-    </div>
-    ${p.signature || p.priceRange || p.memo ? `<div class="card stack" style="gap:4px;margin-bottom:12px">
-      ${p.signature ? `<span><b>대표 메뉴</b> · ${esc(p.signature)}</span>` : ''}${p.priceRange ? `<span><b>가격대</b> · ${esc(p.priceRange)}</span>` : ''}
-      ${p.memo ? `<span class="small muted" style="white-space:pre-wrap">${esc(p.memo)}</span>` : ''}</div>` : ''}
-    ${GOOGLE_KEY && p.lat ? `<div class="stack" style="gap:6px;margin-bottom:12px"><div class="between"><h2 style="font-size:15px">Google 정보</h2><button class="poilink" data-act="gFull" data-id="${p.id}">리뷰·사진 ›</button></div><div class="card" id="placeGSlot" style="padding:8px"><div class="poig-msg">불러오는 중…</div></div></div>` : ''}
-    <div class="stack" style="gap:8px">
-      <h2 style="font-size:15px">메뉴 · 가격</h2>
-      <div class="card" style="padding:0 14px">
-        ${p.menu.length ? p.menu.map((m) => `<div class="list-row">
+  const menuBlock = isEatery(p) ? `<div class="stack" style="gap:8px;margin-top:16px">
+      <h2 style="font-size:15px">내 메뉴 메모</h2>
+      ${p.menu.length ? `<div class="card" style="padding:0 14px">${p.menu.map((m) => `<div class="list-row">
           <span style="flex:1;font-size:15px">${esc(m.name)}</span>
           <b class="num">${m.price ? '₱ ' + esc(m.price) : '<span class="small muted" style="font-weight:400">가격 미입력</span>'}</b>
           ${m.price ? `<span class="small muted">≈₩${Math.round(Number(m.price) * rate).toLocaleString()}</span>` : ''}
           <button class="icon" style="width:36px;height:36px" data-act="delMenu" data-pid="${p.id}" data-id="${m.id}" aria-label="메뉴 삭제">${svg('close', 14, '#5B6B6E')}</button>
-        </div>`).join('') : '<div class="empty" style="padding:16px 0">메뉴가 아직 없어요</div>'}
-      </div>
+        </div>`).join('')}</div>` : ''}
       <form class="row" data-form="menu" data-pid="${p.id}" style="gap:6px">
-        <input name="name" placeholder="메뉴" aria-label="메뉴 이름" required style="flex:1;min-width:0;height:44px;border:1px solid var(--line);border-radius:12px;padding:0 10px">
+        <input name="name" placeholder="먹어 본 메뉴" aria-label="메뉴 이름" required style="flex:1;min-width:0;height:44px;border:1px solid var(--line);border-radius:12px;padding:0 10px">
         <input name="price" placeholder="₱ 가격" aria-label="가격(페소)" inputmode="decimal" style="width:84px;height:44px;border:1px solid var(--line);border-radius:12px;padding:0 10px">
         <button class="btn ghost" type="submit" style="height:44px">추가</button>
       </form>
-      <span class="small muted">원화는 1페소 ≈ ${rate.toFixed(1)}원으로 계산해요${DB.fx.at ? '' : ' (환율 탭에서 갱신 가능)'}.</span>
+      ${p.menu.length ? `<span class="small muted">1페소 ≈ ${rate.toFixed(1)}원으로 계산해요.</span>` : ''}
+    </div>` : '';
+  openSheet(`
+    <div class="between" style="margin-bottom:6px"><span class="small" style="color:var(--coralink);font-weight:700">${CATS[p.cat] || '장소'}${p.priority === 'must' ? ' · 꼭 가기' : ''}</span>
+      <span class="row" style="gap:0"><button class="icon" data-act="favToggle" data-id="${p.id}" data-sheet="1" aria-label="즐겨찾기">${svg('heart', 20, p.fav ? '#E5484D' : '#9AA5A7', 2.2)}</button><button class="icon" data-act="editPlace" data-id="${p.id}" aria-label="장소 수정">${svg('edit', 18, '#5B6B6E')}</button>
+      <button class="icon" data-act="delPlace" data-id="${p.id}" aria-label="장소 삭제">${svg('trash', 18, '#B3412A')}</button></span></div>
+    ${useG ? `<div id="gPlaceSlot" class="gfull gplace"><div class="poig-msg">Google 장소 정보 불러오는 중…</div></div>`
+      : `<h2 style="font-size:22px">${esc(p.name)}</h2><p class="muted small" style="margin:4px 0 12px">${esc(p.area || '')}${p.hours ? ' · 영업 ' + esc(p.hours) : ''}</p>`}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+      ${p.lat ? `<button class="btn ghost" data-act="placeOnMap" data-id="${p.id}" style="height:44px">${svg('map', 16, '#17806D')} 지도에서 보기</button>` : `<a class="btn ghost" href="${link}" target="_blank" rel="noopener" style="text-decoration:none;height:44px">${svg('map', 16, '#17806D')} 구글에서 찾기 ↗</a>`}
+      ${p.lat ? `<button class="btn" data-act="navTo" data-id="${p.id}" style="height:44px;background:#1A73E8">${svg('nav', 16, '#fff')} 길안내</button>`
+        : `<button class="btn ghost" data-act="visitPlace" data-id="${p.id}" style="height:44px">${p.visited ? '방문 취소' : '방문 완료'}</button>`}
     </div>
+    ${p.memo || p.signature ? `<div class="card stack" style="gap:4px;margin-top:12px">${p.signature ? `<span><b>메모</b> · ${esc(p.signature)}</span>` : ''}${p.memo ? `<span class="small muted" style="white-space:pre-wrap">${esc(p.memo)}</span>` : ''}</div>` : ''}
+    ${menuBlock}
     <div class="stack" style="gap:8px;margin-top:16px">
       <h2 style="font-size:15px">일정에 추가</h2>
       <div class="chips">${days.map((d) => `<button class="chip" data-act="placeToDay" data-id="${p.id}" data-day="${d}">D${dayIndex(d)} ${fmtDate(d)}</button>`).join('')}</div>
-      <button class="btn" data-act="placeToTodo" data-id="${p.id}">${svg('plus', 18, '#fff', 2.5)} 시간 정해서 추가</button>
+      <button class="btn ghost" data-act="placeToTodo" data-id="${p.id}">${svg('plus', 18, '#17806D', 2.5)} 시간 정해서 추가</button>
     </div>`);
-  hydrateImages();
-  if (GOOGLE_KEY && p.lat) ensureGid(p).then((id) => { const slot = $('#placeGSlot'); if (!slot) return; if (id) slot.replaceChildren(gCompact(id)); else slot.innerHTML = '<div class="poig-msg">Google에서 이 장소를 찾지 못했어요</div>'; }).catch(() => { const slot = $('#placeGSlot'); if (slot) slot.innerHTML = '<div class="poig-msg">Google 정보를 불러오지 못했어요</div>'; });
+  if (!useG) return;
+  const fail = (msg) => { const slot = $('#gPlaceSlot'); if (slot) slot.outerHTML = `<h2 style="font-size:22px">${esc(p.name)}</h2><p class="muted small" style="margin:4px 0 0">${esc(p.area || '')}</p><div class="poig-msg" style="margin-top:8px">${msg}</div>`; };
+  ensureGid(p).then((id) => {
+    const slot = $('#gPlaceSlot'); if (!slot) return;
+    if (!id) { fail('Google에서 이 장소를 찾지 못했어요'); return; }
+    const el = document.createElement('gmp-place-details');
+    el.innerHTML = `<gmp-place-details-place-request place="${esc(id)}"></gmp-place-details-place-request><gmp-place-all-content></gmp-place-all-content>`;
+    el.addEventListener('gmp-error', () => fail('Google 정보를 불러오지 못했어요'));
+    slot.replaceChildren(el);
+  }).catch(() => fail('Google 정보를 불러오지 못했어요'));
+}
+// 장소가 정해지지 않은 일정: 일정 정보만
+function todoInfoSheet(it) {
+  if (!it) return;
+  const day = Object.keys(S.todos).find((d) => (S.todos[d] || []).some((x) => x.id === it.id));
+  openSheet(`
+    <div class="between"><span class="small" style="color:var(--coralink);font-weight:700">${TODO_CATS[it.cat] || '일정'}${day ? ` · D${dayIndex(day)} ${fmtDate(day)}` : ''}</span>
+      <button class="icon" data-act="editTodo" data-id="${it.id}" aria-label="일정 수정">${svg('edit', 18, '#5B6B6E')}</button></div>
+    <h2 style="font-size:22px;margin-top:4px">${esc(it.title)}</h2>
+    <div class="stack" style="gap:10px;margin-top:12px">
+      <div class="card row" style="gap:10px">${svg('clock', 18, G)}<span>${esc(it.time || '시간 미정')}</span></div>
+      ${it.where ? `<div class="card row" style="gap:10px">${svg('pin', 18, G)}<span>${esc(it.where)}</span></div>` : ''}
+      ${it.note ? `<div class="card" style="white-space:pre-wrap;font-size:14px;line-height:1.6">${esc(it.note)}</div>` : ''}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">
+      <button class="btn ghost" data-act="toggleInfo" data-id="${it.id}" style="height:44px">${it.done ? '완료 취소' : '완료 표시'}</button>
+      <button class="btn ghost" data-act="showOnMap" data-id="${it.id}" style="height:44px">${svg('map', 16, '#17806D')} 위치 정하기</button>
+    </div>`);
 }
 function addPlaceForm(lngLat) { placeForm(null, lngLat); }
 
@@ -1940,6 +1963,8 @@ document.addEventListener('click', (e) => {
     case 'editTodo': todoForm(findTodo(id)); break;
     case 'addTodo': todoForm(null); break;
     case 'openPlace': placeSheet(placeById(id)); break;
+    case 'todoInfo': todoInfoSheet(findTodo(id)); break;
+    case 'toggleInfo': { const t = findTodo(id); if (t) { t.done = !t.done; save(); todoInfoSheet(t); if (S.ui.tab !== 'map') rerender(); } break; }
     case 'addPlace': addPlaceForm(null); break;
     case 'delPlace': S.places = S.places.filter((p) => p.id !== id); closeSheet(); save(); render(); refreshMap(); toast('장소를 지웠어요'); break;
     case 'delMenu': { const p = placeById(b.dataset.pid); p.menu = p.menu.filter((m) => m.id !== id); save(); placeSheet(p); break; }

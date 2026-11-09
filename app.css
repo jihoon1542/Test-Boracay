@@ -186,3 +186,5 @@ body.onmap #sbar{height:calc(env(safe-area-inset-top) + 18px);background:linear-
 .hctl{bottom:124px}
 .hdots{bottom:8px}
 .hmap .mapboxgl-ctrl-bottom-right{top:auto;bottom:124px;right:4px}
+.gplace{min-height:200px;margin:0 -4px}
+.gplace gmp-place-details{width:100%}
