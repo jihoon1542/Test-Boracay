@@ -220,6 +220,29 @@ const walkInfo = (p) => {
   const m = Math.hypot((p.lng - userPos.lng) * 108900, (p.lat - userPos.lat) * 110600) * 1.3; // 직선거리 × 1.3 (길 굴곡 보정)
   return { min: Math.max(1, Math.round(m / 75)), dist: m >= 1000 ? (m / 1000).toFixed(1) + 'km' : Math.round(m / 10) * 10 + 'm' };
 };
+// 여행 진행도: 4박5일 동안 해가 왼쪽에서 떠서 오른쪽으로 짐
+function tripArc(days, before, dleft) {
+  const n = days.length || 1, W = 320, H = 62, L = 14, R = W - 14, Y = 46, top = 12;
+  const start = dateObj(days[0]).getTime() - 12 * 3600e3, end = start + n * 864e5;
+  const f = Math.max(0, Math.min(1, (Date.now() - start) / (end - start)));
+  const pt = (t) => [L + (R - L) * t, Y - (Y - top) * Math.sin(Math.PI * t)];
+  const path = (a, b) => { let d = ''; for (let i = 0; i <= 40; i++) { const [x, y] = pt(a + (b - a) * i / 40); d += (i ? ' L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1); } return d; };
+  const [sx, sy] = pt(before ? 0 : f), after = f >= 1;
+  const labels = days.map((d, i) => { const x = L + (R - L) * (i + 0.5) / n, on = !before && !after && f * n >= i && f * n < i + 1;
+    return `<text x="${x.toFixed(1)}" y="${H - 3}" text-anchor="middle" style="font:${on ? 700 : 500} 10px 'Space Grotesk','Noto Sans KR',sans-serif;fill:${on ? '#C2502C' : '#7C8789'}">D${i + 1}</text>`; }).join('');
+  const ticks = days.slice(1).map((d, i) => { const x = L + (R - L) * (i + 1) / n; return `<line x1="${x.toFixed(1)}" y1="${Y - 3}" x2="${x.toFixed(1)}" y2="${Y + 3}" stroke="#D3D9D6" stroke-width="1.5"/>`; }).join('');
+  const cap = before ? `출발까지 D-${dleft}` : after ? '여행 끝 · 수고했어요' : `${Math.min(n, Math.floor(f * n) + 1)}일차 · ${Math.round(f * 100)}%`;
+  return `<div class="harc"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="여행 진행도 ${esc(cap)}">
+    <defs><linearGradient id="arcg" x1="0" x2="1"><stop offset="0" stop-color="#F6C453"/><stop offset="1" stop-color="#E8743B"/></linearGradient></defs>
+    <path d="${path(0, 1)}" fill="none" stroke="#E3E8E5" stroke-width="2" stroke-dasharray="3 4"/>
+    ${!before && f > 0 ? `<path d="${path(0, f)}" fill="none" stroke="url(#arcg)" stroke-width="3" stroke-linecap="round"/>` : ''}
+    <line x1="${L - 6}" y1="${Y}" x2="${R + 6}" y2="${Y}" stroke="#C9D2CE" stroke-width="1.5"/>${ticks}
+    ${before ? `<clipPath id="hz"><rect x="0" y="0" width="${W}" height="${Y}"/></clipPath><g clip-path="url(#hz)"><circle cx="${sx}" cy="${Y + 2}" r="9" fill="#F6C453" opacity=".9"/></g>`
+      : `<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="13" fill="#F6C453" opacity=".25"/><circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="7.5" fill="${after ? '#E8743B' : '#F6A93B'}" stroke="#fff" stroke-width="2"/>`}
+    ${labels}
+    <text x="${R}" y="10" text-anchor="end" style="font:700 11px 'Noto Sans KR',sans-serif;fill:#17806D">${esc(cap)}</text>
+  </svg></div>`;
+}
 function viewHome() {
   const day = currentDay(), t = sunTimes(day), now = new Date(), days = tripDays();
   const before = todayStr() < S.trip.start;
@@ -233,49 +256,49 @@ function viewHome() {
   let frac = (now - t.rise) / (t.set - t.rise); frac = before ? 0 : Math.max(0, Math.min(1, frac));
   const countdown = before ? `여행까지 D-${dleft}` : mins > 0 ? `${Math.floor(mins / 60)}시간 ${mins % 60}분 남음` : '오늘 해는 졌어요';
   const tk = nextTicket();
-  const ring = list.length ? Math.round(163 * done / list.length) : 0;
-  const di = days.indexOf(day), prog = days.length > 1 ? (before ? 0 : di / (days.length - 1)) : 1;
-  const steps = days.map((d, i) => {
-    const st = before ? '' : i < di ? 'done' : i === di ? 'now' : '';
-    return `<button data-act="homeDay" data-day="${d}" class="hstep" aria-label="D${i + 1} 일정 보기">
-      <span class="hdot ${st}">${st === 'done' ? svg('check', 13, '#fff', 3) : st === 'now' ? '<i></i>' : ''}</span>
-      <b class="num">D${i + 1}</b><span>${fmtDate(d).slice(0, -4)}</span></button>`;
-  }).join('');
+  const di = days.indexOf(day);
+  const st = settlement(), bud = +S.trip.budget || 0, todayKey = todayStr();
+  const todaySpend = S.expenses.filter((x) => x.date === todayKey).reduce((a, x) => a + (+x.amount || 0), 0);
+  const pct = bud ? Math.min(100, Math.round(st.total / bud * 100)) : 0;
+  const sunTxt = `${S.alarm.off[day] ? '알람 꺼짐' : `알람 ${fmtTime(new Date(t.set - S.alarm.offset * 60000))}`}${wxNowText() ? ' · ' + wxNowText() : ''}`;
   return `
   <div class="hmap">
     <div class="hmapbg">${homeMbState === 'failed' ? `<button class="hfail" data-act="homeRetry">${svg('map', 18, G)}지도를 불러오지 못했어요 · 다시 시도</button>` : ''}</div>
-    <div class="hhead">
-      <div style="min-width:0"><button data-act="trips" style="border:0;background:none;padding:0;font-size:24px;font-weight:700;letter-spacing:-.03em;line-height:1.2;text-align:left;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${esc(S.trip.name)}</button>
-        <div style="font-size:14px;font-weight:700;color:${G};margin-top:2px">${before ? `여행 D-${dleft}` : `여행 ${di + 1}일차`} · ${fmtDate(day)}</div></div>
-      <div class="row" style="gap:0">
-        <button class="icon" data-act="tab" data-tab="sunset" aria-label="선셋 알람">${svg('bell', 24, '#1C2B2E')}</button>
-        <button class="icon" data-act="settings" aria-label="설정">${svg('gear', 22, '#5B6B6E')}</button>
+    <div class="hhead hhead2">
+      <div class="between" style="gap:8px">
+        <button data-act="trips" class="hhead-t"><b>${esc(S.trip.name)}</b></button>
+        <button class="icon" data-act="tab" data-tab="sunset" aria-label="선셋 알람" style="width:40px;height:40px">${svg('bell', 22, '#1C2B2E')}</button>
       </div>
+      ${tripArc(days, before, dleft)}
     </div>
   </div>
-  <div class="hdock${homeFull ? ' down' : ''}">
-    <div class="hctl"><button class="hfab" data-act="homeFit" aria-label="화이트비치로 돌아가기">${svg('crosshair', 18, '#1C2B2E')}</button>
-      <button class="hbig" data-act="tab" data-tab="map">${svg('map', 16, G)}지도 탭</button></div>
-  <div class="hsheet">
-    <div class="hgrabzone"><div class="hgrab" aria-hidden="true"></div>
-    <button class="hpeek" data-act="homeExpand">${svg('chevd', 16, '#5B6B6E')}<span>위로 올려 일정 보기${next ? ' · 다음: ' + esc(np ? np.name : next.title) : ''}</span></button></div>
-    <div class="hsteps"><div class="hline"><i style="width:${(prog * 100).toFixed(0)}%"></i></div>${steps}</div>
-    ${next ? `<div class="hnext">
-      <span class="hnext-ic">${svg(np ? (CAT_ICON[np.cat] || 'pin') : 'list', 26, '#fff')}</span>
-      <button data-act="${np ? 'openPlace' : 'tab'}" data-id="${np ? np.id : ''}" data-tab="todo" style="flex:1;min-width:0;border:0;background:none;padding:0;text-align:left;display:flex;flex-direction:column;gap:2px">
-        <span style="font-size:12px;color:${G};font-weight:700">다음 일정${next.time ? ' · ' + esc(next.time) : ''}</span>
-        <b style="font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(np ? np.name : next.title)}</b>
-        <span class="muted" style="font-size:13px">${wi ? `도보 약 ${wi.min}분 · ${wi.dist}` : esc(np ? (np.area || next.title) : '장소 없음')}</span>
-      </button>
-      ${np && np.lat ? `<button class="hnav" data-act="navTo" data-id="${np.id}" aria-label="길찾기" style="border:0">${svg('nav', 22, G)}</button>` : ''}
-    </div>` : `<div class="hnext" style="justify-content:center"><span class="muted" style="font-size:14px">남은 일정이 없어요 · 지도에서 장소를 담아 보세요</span></div>`}
-    <button class="hsun2" data-act="tab" data-tab="sunset">
-      <span class="hsun2-ic">${svg('sun', 20, '#fff')}</span>
-      <span style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px">
-        <span style="font-size:12px;opacity:.85">${before ? '첫날' : '오늘'} 일몰 · ${countdown}</span>
-        <b style="font-size:17px"><span class="num">${fmtTime(t.set)}</span><span style="font-size:13px;font-weight:500;opacity:.9"> · ${S.alarm.off[day] ? '알람 꺼짐' : `알람 ${fmtTime(new Date(t.set - S.alarm.offset * 60000))}`}${wxNowText() ? ' · ' + wxNowText() : ''}</span></b>
-      </span>${svg('chev', 18, '#fff')}</button>
-  </div></div>`;
+  <div class="hctl"><button class="hfab" data-act="homeFit" aria-label="화이트비치로 돌아가기">${svg('crosshair', 18, '#1C2B2E')}</button>
+    <button class="hbig" data-act="tab" data-tab="map">${svg('map', 16, G)}지도 탭</button></div>
+  <div class="hcards" id="hcards">
+    <div class="hcard">
+      ${next ? `<div class="hnext2">
+        <span class="hnext-ic">${svg(np ? (CAT_ICON[np.cat] || 'pin') : 'list', 22, '#fff')}</span>
+        <button data-act="${np ? 'openPlace' : 'tab'}" data-id="${np ? np.id : ''}" data-tab="todo" class="hnext-t">
+          <span style="font-size:12px;color:${G};font-weight:700">다음 일정${next.time ? ' · ' + esc(next.time) : ''}</span>
+          <b>${esc(next.title)}</b>
+          <span class="muted" style="font-size:12px">${np ? esc(np.name) : '장소 없음'}${wi ? ` · 도보 ${wi.min}분` : ''}</span>
+        </button>
+        ${np && np.lat ? `<button class="hnav2" data-act="navTo" data-id="${np.id}" aria-label="길안내">${svg('nav', 20, '#1A73E8')}</button>` : ''}
+      </div>` : `<div class="hnext2"><span class="muted" style="font-size:14px">남은 일정이 없어요</span></div>`}
+      <div class="hchips"><button class="hchip" data-act="tab" data-tab="todo">D${di + 1} · ${fmtDate(day).slice(0, -4)}</button><button class="hchip" data-act="tab" data-tab="todo">할 일 ${done}/${list.length}</button>${tk ? `<button class="hchip" data-act="openTicket" data-id="${tk.id}">${svg(TCAT_ICON[tk.cat] || 'ticket', 13, '#5B6B6E')}${esc(tk.title)}</button>` : ''}</div>
+    </div>
+    <button class="hcard hsunc" data-act="tab" data-tab="sunset">
+      <span class="small" style="opacity:.85">${before ? '첫날' : '오늘'} 일몰 · ${countdown}</span>
+      <b class="num" style="font-size:34px;line-height:1.1">${fmtTime(t.set)}</b>
+      <span style="font-size:13px">${sunTxt}</span>
+    </button>
+    <button class="hcard hmoney" data-act="tab" data-tab="money">
+      <span class="small muted">사용한 경비${bud ? ` · 예산의 ${pct}%` : ''}</span>
+      <b class="num" style="font-size:24px">${won(st.total)}</b>
+      ${bud ? `<span class="hbar2"><i style="width:${pct}%"></i></span><span class="small muted">남은 예산 ${won(bud - st.total)}${todaySpend ? ` · 오늘 ${won(todaySpend)}` : ''}</span>` : '<span class="small muted">예산을 정하면 남은 금액이 보여요</span>'}
+    </button>
+  </div>
+  <div class="hdots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>`;
 }
 function nextTicket() {
   const t = todayStr();
@@ -1808,50 +1831,11 @@ function loadMapboxLib() {
   });
   return mbLibPromise;
 }
-// 홈: 지도는 화면 전체에 깔려 있고, 일정 카드(dock)가 그 위로 올라오거나 내려감 (지도 크기를 바꾸지 않아서 부드러움)
-let homeFull = false;
-function setHomeFull(on) {
-  homeFull = on;
-  const d = document.querySelector('.hdock'); if (!d) return;
-  d.style.transition = ''; d.style.transform = '';
-  d.classList.toggle('down', on);
-  if (!on) { const sh = d.querySelector('.hsheet'); if (sh) sh.scrollTop = 0; }
-}
-(function bindHomeSwipe() {
-  let st = null;
-  const dockOffset = (d) => d.offsetHeight - 76; // 내려갔을 때 이동 거리
-  document.addEventListener('touchstart', (e) => {
-    const d = e.target.closest && e.target.closest('.hdock');
-    if (!d || S.ui.tab !== 'home' || e.touches.length !== 1 || e.target.closest('.hctl')) { st = null; return; }
-    const sh = d.querySelector('.hsheet');
-    st = { d, sh, y0: e.touches[0].clientY, t0: Date.now(), dy: 0, drag: false, grab: !!e.target.closest('.hgrabzone'), off: dockOffset(d), raf: 0 };
-  }, { passive: true });
-  document.addEventListener('touchmove', (e) => {
-    if (!st) return;
-    const dy = e.touches[0].clientY - st.y0; st.dy = dy;
-    if (!st.drag) {
-      if (Math.abs(dy) < 6) return;
-      // 펼쳐진 상태: 카드 내용이 맨 위일 때 아래로 끌면 드래그, 아니면 카드 안 스크롤
-      if (!homeFull && dy > 0 && (st.grab || st.sh.scrollTop <= 0)) st.drag = true;
-      else if (homeFull) st.drag = true;
-      else { st = null; return; }
-      st.d.style.transition = 'none';
-    }
-    e.preventDefault();
-    const base = homeFull ? st.off : 0, y = Math.max(0, Math.min(st.off, base + dy));
-    if (!st.raf) st.raf = requestAnimationFrame(() => { if (st) { st.d.style.transform = `translateY(${y}px)`; st.raf = 0; } });
-  }, { passive: false });
-  const end = () => {
-    if (!st) return;
-    const s0 = st; st = null;
-    if (!s0.drag) return;
-    if (s0.raf) cancelAnimationFrame(s0.raf);
-    const v = s0.dy / Math.max(1, Date.now() - s0.t0); // px/ms
-    const goDown = homeFull ? !(s0.dy < -40 || v < -0.4) : (s0.dy > 80 || v > 0.5);
-    setHomeFull(goDown);
-  };
-  document.addEventListener('touchend', end); document.addEventListener('touchcancel', end);
-})();
+document.addEventListener('scroll', (e) => {
+  const c = e.target; if (!c || c.id !== 'hcards') return;
+  const i = Math.round(c.scrollLeft / Math.max(1, c.firstElementChild.offsetWidth + 10));
+  document.querySelectorAll('.hdots i').forEach((d, k) => d.classList.toggle('on', k === i));
+}, true);
 let homeMap = null, homeMbEl = null, homeMbState = 'idle', homeMbKey = '', homeMarkers = [], homeFitSig = '';
 function dropHomeMap() {
   if (homeMap) { try { homeMap.remove(); } catch (e) {} }
@@ -1928,8 +1912,8 @@ function updateHomeMap() {
     homeFitSig = sig;
     const pts = stops.length ? stops.map((p) => [p.lng, p.lat]) : WHITE_BEACH;
     const xs = pts.map((c) => c[0]), ys = pts.map((c) => c[1]);
-    if (pts.length > 1) homeMap.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: { top: 110, bottom: homeFull ? 110 : Math.round(((document.querySelector('.hdock') || {}).offsetHeight || 300) + 40), left: 60, right: 60 }, maxZoom: 15.5, duration: 0 });
-    else homeMap.jumpTo({ center: pts[0], zoom: 15, padding: { top: 90, bottom: homeFull ? 80 : Math.round(((document.querySelector('.hdock') || {}).offsetHeight || 300)), left: 0, right: 0 } });
+    if (pts.length > 1) homeMap.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: { top: 110, bottom: 250, left: 60, right: 60 }, maxZoom: 15.5, duration: 0 });
+    else homeMap.jumpTo({ center: pts[0], zoom: 15, padding: { top: 90, bottom: 220, left: 0, right: 0 } });
   }
 }
 
@@ -1952,8 +1936,6 @@ document.addEventListener('click', (e) => {
     case 'favToggle': { const p = placeById(id); if (!p) break; toggleFav(p); if (b.dataset.sheet) placeSheet(p); if (S.ui.tab === 'map') { refreshMap(); renderMapCats(); } else rerender(); break; }
     case 'poiFav': { const p = POI; if (!p) break; const place = { id: uid(), name: p.gname || p.name || CATS[p.cat] || '새 장소', cat: CATS[p.cat] ? p.cat : 'etc', area: '', lat: +p.lat.toFixed(6), lng: +p.lng.toFixed(6), menu: [], memo: '', coordV: 2, fav: true }; if (p.gid) place.gid = p.gid; S.places.unshift(place); closePoi(true); S.ui.selPlace = place.id; save(); refreshMap(); renderMapCats(); toast('즐겨찾기에 넣었어요'); break; }
     case 'homeFit': homeFitSig = ''; updateHomeMap(); break;
-    case 'homeExpand': setHomeFull(false); break;
-    case 'homeCollapse': setHomeFull(true); break;
     case 'homeRetry': dropHomeMap(); homeMbState = 'idle'; rerender(); break;
     case 'poiFull': poiFullSheet(); break;
     case 'poiNav': if (POI) navTo({ id: 'poi', name: POI.name || CATS[POI.cat], lat: POI.lat, lng: POI.lng }); break;

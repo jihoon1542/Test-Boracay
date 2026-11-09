@@ -91,24 +91,7 @@ h2{margin:0;font-size:17px}
 .hfab{width:40px;height:40px;border-radius:50%;border:0;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .hhead{position:absolute;left:14px;right:14px;top:14px;background:#fff;border-radius:20px;padding:10px 6px 10px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,.08)}
 .hbig{height:40px;padding:0 14px;border-radius:999px;border:0;background:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
-.hsheet{position:relative;margin:-30px -18px 0;background:#fff;border-radius:26px 26px 0 0;padding:18px 18px 8px;display:flex;flex-direction:column;gap:14px;min-height:calc(100% - 250px)}
-.hsteps{position:relative;display:flex;justify-content:space-between;padding:0 4px}
-.hline{position:absolute;left:34px;right:34px;top:13px;height:3px;background:#E3E6E3;border-radius:2px}
-.hline i{display:block;height:100%;background:#17806D;border-radius:2px}
-.hstep{position:relative;z-index:1;border:0;background:none;padding:0;width:60px;display:flex;flex-direction:column;align-items:center;gap:3px}
-.hstep b{font-size:13px}.hstep>span:last-child{font-size:11px;color:var(--muted)}
-.hdot{width:28px;height:28px;border-radius:50%;background:#fff;border:3px solid #C9CFCB;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
-.hdot.done{background:#17806D;border-color:#17806D}.hdot.now{border-color:#17806D}
-.hdot.now i{width:10px;height:10px;border-radius:50%;background:#17806D;display:block}
-.hnext{display:flex;align-items:center;gap:14px;background:#E6F3EF;border-radius:20px;padding:12px 12px 12px 14px;min-height:76px}
 .hnext-ic{width:50px;height:50px;border-radius:16px;background:#17806D;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.hnav{width:48px;height:48px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.htiles{display:flex;gap:10px}
-.hsun{flex:1.2;border:0;border-radius:20px;background:#17806D;color:#fff;padding:14px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left}
-.hbar{width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.22);overflow:hidden;margin:6px 0 2px}
-.hbar i{display:block;height:100%;background:#F08A5D;border-radius:3px}
-.htile{flex:1;border:0;border-radius:18px;background:#F4F6F3;padding:10px 12px;display:flex;align-items:center;gap:10px;text-align:left;min-height:64px}
-.hrow{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid #EEF0EC}
 .hrow:last-child{border-bottom:0}
 .micon{width:44px;height:44px;border-radius:12px;background:#E6F3EF;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .tripcard{background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05)}
@@ -153,41 +136,39 @@ gmp-place-details,gmp-place-search{width:100%;--gmp-mat-font-family:'Noto Sans K
 .gfull{min-height:120px}
 
 
-/* 홈: 지도 전체 + 위로 덮는 일정 카드 */
+/* 홈: 지도 전체 + 아래 넘겨 보는 카드 */
 html,body{overscroll-behavior:none}
 #view{overscroll-behavior:contain}
 #view.vhome{padding:0;overflow:hidden}
 #view.vhome .hmap{position:absolute;inset:0;margin:0;height:auto}
-.hdock{position:absolute;left:0;right:0;bottom:0;top:clamp(320px,64%,640px);z-index:3;transition:transform .32s cubic-bezier(.2,.8,.2,1);will-change:transform}
-.hdock.down{transform:translateY(calc(100% - 76px))}
-.hdock .hctl{position:absolute;left:14px;bottom:auto;top:-54px}
-.hdock .hsheet{position:absolute;inset:0;margin:0;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-top:6px;box-shadow:0 -6px 20px rgba(0,0,0,.08)}
-.hgrabzone{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 6px;margin:-6px -18px 0;touch-action:none;flex-shrink:0;position:sticky;top:-6px;background:#fff;z-index:2;border-radius:26px 26px 0 0}
-.hgrab{width:40px;height:5px;border-radius:3px;background:#D6DCD9}
-.hpeek{display:none;border:0;background:none;height:36px;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:#3E5457;width:100%;min-width:0}
-.hpeek svg{transform:rotate(180deg);flex-shrink:0}
-.hpeek span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hdock.down .hpeek{display:flex}
-.hdock.down .hsheet{overflow:hidden}
+.hhead-t{border:0;background:none;padding:0;text-align:left;display:flex;flex-direction:column;min-width:0;flex:1}
+.hhead-t b{font-size:18px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hhead-t span{font-size:12px;font-weight:700;color:#17806D}
+.hctl{position:absolute;left:16px;bottom:206px;display:flex;gap:8px;align-items:center;z-index:3}
+.hcards{position:absolute;left:0;right:0;bottom:24px;display:flex;gap:10px;padding:0 16px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;z-index:3;-webkit-overflow-scrolling:touch}
+.hcards::-webkit-scrollbar{display:none}
+.hcard{flex:0 0 calc(100% - 52px);max-width:360px;scroll-snap-align:center;box-sizing:border-box;border:0;border-radius:22px;padding:14px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.14);display:flex;flex-direction:column;gap:10px;text-align:left;height:160px;justify-content:space-between}
+.hnext2{display:flex;align-items:center;gap:12px;min-width:0}
+.hnext2 .hnext-ic{width:44px;height:44px;border-radius:14px;flex-shrink:0}
+.hnext-t{flex:1;min-width:0;border:0;background:none;padding:0;text-align:left;display:flex;flex-direction:column;gap:1px}
+.hnext-t b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hnav2{width:44px;height:44px;border-radius:50%;border:0;background:#EEF4FD;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hchips{display:flex;gap:6px;overflow:hidden}
+.hchip{border:0;background:#F2F5F3;color:#5B6B6E;font-size:12px;font-weight:500;height:28px;padding:0 10px;border-radius:14px;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.hsunc{background:#17806D;color:#fff;justify-content:center;gap:2px}
+.hmoney{justify-content:center;gap:4px}
+.hbar2{height:6px;border-radius:3px;background:#E8ECEA;overflow:hidden;display:block}
+.hbar2 i{display:block;height:100%;background:#2DAA8A;border-radius:3px}
 .hmap .mapboxgl-ctrl-bottom-right{bottom:auto;top:calc(100px + env(safe-area-inset-top))}
 .hmap .mapboxgl-ctrl-bottom-left{display:none}
-.hdock .hsheet>*{flex-shrink:0}
-.hdock .hsheet{padding-bottom:24px}
-
-/* 즐겨찾기 */
-.mcat.fav{color:#1C2B2E}
-.favdot{width:22px;height:22px;border-radius:50%;background:#E5484D;border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.25);flex-shrink:0}
-.card .favdot{width:30px;height:30px;border:0}
-.favpin{border:0;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center}
-.favpin.on .favdot{width:30px;height:30px;box-shadow:0 0 0 6px rgba(229,72,77,.22),0 1px 4px rgba(0,0,0,.25)}
-.favlab{display:none;font:600 11px 'Noto Sans KR',sans-serif;color:#B4232A;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;white-space:nowrap;margin-top:2px;max-width:120px;overflow:hidden;text-overflow:ellipsis}
-.z16 .favlab,.favpin.on .favlab{display:block}
-.hdock.down .hsheet>*:not(.hgrabzone){visibility:hidden}
-.mcat.fav.on{background:#E5484D;border-color:#E5484D;color:#fff}
-
 /* 아이폰 홈 화면 앱: 상태바까지 화면 채우기 */
 #sbar{position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:#17806D;z-index:60;pointer-events:none}
 body.onmap #sbar{height:calc(env(safe-area-inset-top) + 18px);background:linear-gradient(rgba(0,0,0,.34),rgba(0,0,0,0))}
 .hhead{top:calc(12px + env(safe-area-inset-top))}
-.hsun2{border:0;width:100%;background:#17806D;color:#fff;border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:12px;text-align:left}
-.hsun2-ic{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hdots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px;z-index:3}
+.hdots i{display:block;width:6px;height:6px;border-radius:3px;background:#B8C4C0;transition:width .2s}
+.hdots i.on{width:18px;background:#17806D}
+
+.hhead2{flex-direction:column;align-items:stretch;gap:0;padding:8px 8px 6px 16px}
+.harc{margin:-4px 4px 0 -4px}
+.harc svg{display:block;overflow:visible}
