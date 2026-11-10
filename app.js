@@ -701,6 +701,7 @@ function initMap() {
     map.addLayer({ id: 'nav-case', type: 'line', source: 'nav', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#fff', 'line-width': 9 } });
     map.addLayer({ id: 'nav', type: 'line', source: 'nav', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1A73E8', 'line-width': 5 } });
     setupFavLayer();
+    addTurtle();
     setupPoiTap();
     hideFerries(map);
     refreshMap();
@@ -722,6 +723,48 @@ function initMap() {
 function applyAppTheme(m = map) {
   const cfg = { lightPreset:'day', colorWater:'#BFE6EA', colorLand:'#F3F1EA', colorGreenspace:'#E4F0DF', colorRoads:'#FFFFFF', colorTrunks:'#FFFFFF', colorMotorways:'#FFFFFF', colorBuildings:'#EAE5D8', colorCommercial:'#EFEADF', colorIndustrial:'#EFEADF', colorEducation:'#EFEADF', colorMedical:'#EFEADF', colorPlaceLabels:'#3E5457', colorRoadLabels:'#6B7779', colorPointOfInterestLabels:'#5B6B6E', densityPointOfInterestLabels:4, showPointOfInterestLabels:true, show3dObjects:false, show3dBuildings:false, show3dTrees:false, show3dLandmarks:false, show3dFacades:false };
   (m.getStyle().imports || []).forEach((im) => Object.entries(cfg).forEach(([k, v]) => { try { m.setConfigProperty(im.id, k, v); } catch (e) {} }));
+}
+/* ----- 🐢 숨은 거북이: 호핑투어 바다(크로커다일 섬 근처)에서 헤엄침. 누르면 얼굴 거북이가 엉금엉금 ----- */
+const TURTLE_AT = [121.9505, 11.9478];
+const TURTLE_FACE = './turtle-face.jpg'; // 저장소에 이 이름으로 정사각형 얼굴 사진을 올리면 거북이 머리가 됨
+const turtleSvg = (head) => `<svg viewBox="-75 -72 185 144" aria-hidden="true">
+  <g class="tfl tfl1"><ellipse cx="30" cy="-44" rx="13" ry="22" transform="rotate(-35 30 -44)" fill="#7DBE7A"/></g>
+  <g class="tfl tfl2"><ellipse cx="30" cy="44" rx="13" ry="22" transform="rotate(35 30 44)" fill="#7DBE7A"/></g>
+  <g class="tfl tfl3"><ellipse cx="-36" cy="-34" rx="9" ry="15" transform="rotate(35 -36 -34)" fill="#7DBE7A"/></g>
+  <g class="tfl tfl4"><ellipse cx="-36" cy="34" rx="9" ry="15" transform="rotate(-35 -36 34)" fill="#7DBE7A"/></g>
+  <path d="M-52 0 l-14 -5 v10z" fill="#7DBE7A"/>
+  <ellipse cx="0" cy="0" rx="52" ry="42" fill="#4F8F55"/>
+  <ellipse cx="0" cy="0" rx="45" ry="35" fill="#6FAF6B"/>
+  <path d="M-14 -12 l14 -9 14 9 v16 l-14 9 -14 -9z" fill="#8CC788"/>
+  <path d="M-38 -6 l12 -10 M-38 6 l12 10 M38 -6 l-12 -10 M38 6 l-12 10 M0 -35 v14 M0 35 v-14" stroke="#4F8F55" stroke-width="3" stroke-linecap="round"/>
+  ${head}
+</svg>`;
+const smallHead = '<circle cx="62" cy="0" r="14" fill="#7DBE7A"/><circle cx="68" cy="-5" r="2.2" fill="#1C2B2E"/><circle cx="68" cy="5" r="2.2" fill="#1C2B2E"/>';
+let turtleMarker = null;
+function addTurtle() {
+  if (turtleMarker) turtleMarker.remove();
+  const el = document.createElement('button');
+  el.className = 'turtle'; el.dataset.mb = '1'; el.dataset.act = 'turtle'; el.setAttribute('aria-label', '바다거북');
+  el.innerHTML = `<span class="tswim">${turtleSvg(smallHead)}</span>`;
+  turtleMarker = new mapboxgl.Marker({ element: el }).setLngLat(TURTLE_AT).addTo(map);
+  const vis = () => el.classList.toggle('show', map.getZoom() >= 13.4);
+  map.on('zoom', vis); vis();
+}
+function turtleShow() {
+  const box = document.createElement('div');
+  box.className = 'tegg'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', '거북이');
+  const head = `<defs><clipPath id="tface"><circle cx="72" cy="0" r="30"/></clipPath></defs>
+    <circle cx="72" cy="0" r="33" fill="#7DBE7A"/>
+    <g clip-path="url(#tface)"><circle cx="72" cy="0" r="30" fill="#7DBE7A"/>
+      <g class="tfallback"><circle cx="64" cy="-8" r="3.6" fill="#1C2B2E"/><circle cx="80" cy="-8" r="3.6" fill="#1C2B2E"/><path d="M64 8 q8 7 16 0" stroke="#1C2B2E" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="58" cy="4" r="4" fill="#F5A3A3" opacity=".7"/><circle cx="86" cy="4" r="4" fill="#F5A3A3" opacity=".7"/></g>
+      <image class="tphoto" href="${TURTLE_FACE}?v=1" x="42" y="-30" width="60" height="60" preserveAspectRatio="xMidYMid slice"/></g>`;
+  box.innerHTML = `<div class="twalk"><div class="tbob">${turtleSvg(head)}</div></div><p class="tsay">엉금엉금…</p><p class="tclose">아무 데나 누르면 바다로 돌아가요</p>`;
+  const img = box.querySelector('.tphoto');
+  img.addEventListener('load', () => box.classList.add('hasface'));
+  img.addEventListener('error', () => img.remove());
+  box.addEventListener('click', () => { box.classList.add('bye'); setTimeout(() => box.remove(), 350); });
+  $('#app').appendChild(box);
+  if (navigator.vibrate) navigator.vibrate(30);
 }
 let meMarker = null;
 function mbPin(p, n, on) {
@@ -1998,6 +2041,7 @@ document.addEventListener('click', (e) => {
   switch (a) {
     case 'tab': closeSheet(); if (POI) closePoi(true); S.ui.tab = b.dataset.tab; rerender(); break;
     case 'poiClose': closePoi(); break;
+    case 'turtle': if (POI) closePoi(true); turtleShow(); break;
     case 'diagTap': { const now = Date.now(); diagTaps = now - diagT < 600 ? diagTaps + 1 : 1; diagT = now; if (diagTaps >= 5) { diagTaps = 0; showDiag(); } break; }
     case 'favToggle': { const p = placeById(id); if (!p) break; toggleFav(p); if (b.dataset.sheet) placeSheet(p); if (S.ui.tab === 'map') { refreshMap(); renderMapCats(); } else rerender(); break; }
     case 'poiFav': { const p = POI; if (!p) break; const place = { id: uid(), name: p.gname || p.name || CATS[p.cat] || '새 장소', cat: CATS[p.cat] ? p.cat : 'etc', area: '', lat: +p.lat.toFixed(6), lng: +p.lng.toFixed(6), menu: [], memo: '', coordV: 2, fav: true }; if (p.gid) place.gid = p.gid; S.places.unshift(place); closePoi(true); S.ui.selPlace = place.id; save(); refreshMap(); renderMapCats(); toast('즐겨찾기에 넣었어요'); break; }

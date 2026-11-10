@@ -227,3 +227,27 @@ nav.tabs button{height:56px;justify-content:center;gap:4px;padding:0}
 .tsTile span{font-size:12px;color:var(--muted)}
 .tsTile b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tsTile i{font-style:normal;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 🐢 숨은 거북이 */
+.turtle{border:0;background:none;padding:0;width:34px;height:34px;opacity:0;pointer-events:none;transition:opacity .4s}
+.turtle.show{opacity:1;pointer-events:auto}
+.tswim{display:block;width:34px;height:34px;animation:tcircle 26s linear infinite}
+.tswim svg{width:34px;height:26px;margin-top:4px;transform:rotate(90deg);filter:drop-shadow(0 2px 2px rgba(20,70,80,.25))}
+.turtle .tfl{transform-box:fill-box;transform-origin:center;animation:tpaddle 1.6s ease-in-out infinite}
+.turtle .tfl2,.turtle .tfl3{animation-delay:-.8s}
+@keyframes tcircle{from{transform:rotate(0deg) translateX(16px)}to{transform:rotate(360deg) translateX(16px)}}
+@keyframes tpaddle{0%,100%{transform:rotate(0)}50%{transform:rotate(22deg)}}
+.tegg{position:absolute;inset:0;z-index:60;background:linear-gradient(180deg,#BFE6EA 0%,#9ED6DC 55%,#F4E3B4 55%,#F4E3B4 100%);overflow:hidden;animation:tin .35s ease-out}
+.tegg.bye{opacity:0;transition:opacity .35s}
+@keyframes tin{from{opacity:0}to{opacity:1}}
+.twalk{position:absolute;left:-250px;top:calc(55% - 92px);width:240px;animation:tcrawl 11s linear infinite}
+.tegg.hasface .tfallback{display:none}
+.tbob{animation:tstep .9s steps(2) infinite}
+.tbob svg{width:240px;height:187px;filter:drop-shadow(0 8px 6px rgba(120,100,60,.25))}
+.tegg .tfl{transform-box:fill-box;transform-origin:center;animation:tleg .9s ease-in-out infinite}
+.tegg .tfl2,.tegg .tfl3{animation-delay:-.45s}
+@keyframes tcrawl{from{left:-250px}to{left:calc(100% + 10px)}}
+@keyframes tstep{0%{transform:translateY(0) rotate(-1.5deg)}100%{transform:translateY(-5px) rotate(1.5deg)}}
+@keyframes tleg{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(14deg)}}
+.tsay{position:absolute;left:0;right:0;top:calc(55% + 110px);text-align:center;font-size:22px;font-weight:700;color:#7A5A2E;animation:tsay 1.8s ease-in-out infinite}
+@keyframes tsay{0%,100%{opacity:.55}50%{opacity:1}}
+.tclose{position:absolute;left:0;right:0;bottom:calc(28px + env(safe-area-inset-bottom));text-align:center;font-size:13px;color:#9A7D52}
