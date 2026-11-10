@@ -3,7 +3,6 @@
 2026년 12월 16일 ~ 20일, 보라카이 4박 5일 여행을 위해 직접 만든 여행 앱.
 아이폰 홈 화면에 추가해서 일반 앱처럼 쓰는 웹앱(PWA)이에요. 설치나 앱스토어 없이 링크 하나로 열려요.
 
-- 실사용 버전: https://jihoon1542.github.io/Boracay/
 - 테스트 버전: https://jihoon1542.github.io/Test-Boracay/
 
 ---
