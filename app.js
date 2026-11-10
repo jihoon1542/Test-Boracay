@@ -665,9 +665,9 @@ function initMap() {
     map.addLayer({ id: 'nav-case', type: 'line', source: 'nav', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#fff', 'line-width': 9 } });
     map.addLayer({ id: 'nav', type: 'line', source: 'nav', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1A73E8', 'line-width': 5 } });
     addDecorMarkers();
+    setupFavLayer();
     setupPoiTap();
     hideFerries(map);
-    const zc = () => map.getContainer().classList.toggle('z16', map.getZoom() >= 16); map.on('zoom', zc); zc();
     refreshMap();
     showMapFail(false);
     runMapQueue();
@@ -678,8 +678,10 @@ function initMap() {
   map.on('touchstart', (e) => { if (e.originalEvent.touches.length !== 1) return; const ll = e.lngLat; lp = setTimeout(() => addPlaceForm(ll), 550); });
   ['touchend', 'touchmove', 'dragstart', 'zoomstart'].forEach((ev) => map.on(ev, () => clearTimeout(lp)));
   map.on('contextmenu', (e) => addPlaceForm(e.lngLat));
-  map.on('error', (e) => { console.warn('Mapbox:', e.error && e.error.message); if (!loaded) { try { map.remove(); } catch (er) {} map = null; mapboxFailed(); } });
-  setTimeout(() => { if (!loaded && mapState !== 'failed') { try { map && map.remove(); } catch (er) {} map = null; mapboxFailed(); } }, 6000);
+  // 인증·스타일 오류(401/403/404)만 실패로 보고, 느린 인터넷은 기다림. 늦게라도 뜨면 자동으로 실패 화면을 닫음
+  map.on('error', (e) => { const st = e.error && e.error.status; console.warn('Mapbox:', e.error && e.error.message); if (!loaded && (st === 401 || st === 403 || st === 404)) { try { map.remove(); } catch (er) {} map = null; mapboxFailed(); } });
+  setTimeout(() => { if (!loaded && map && mapState === 'loading') { mapState = 'slow'; if (S.ui.tab === 'map') toast('지도를 불러오는 중이에요. 인터넷이 느린 것 같아요'); } }, 8000);
+  setTimeout(() => { if (!loaded && map) { try { map.remove(); } catch (er) {} map = null; mapboxFailed(); } }, 25000);
 }
 // Mapbox 지도의 색을 앱 그림 지도처럼 바꿔 칠하기
 function applyAppTheme(m = map) {
@@ -719,13 +721,6 @@ function addDecorMarkers() {
   UMBS.forEach((ll) => mk(`<svg width="20" height="22" viewBox="-10 -21 20 22" aria-hidden="true">${UMB}</svg>`, ll));
 }
 function mbPin(p, n, on) {
-  if (!n && p.fav) {
-    const el = document.createElement('button'); el.dataset.mb = '1'; el.setAttribute('aria-label', '즐겨찾기 ' + p.name);
-    el.className = 'favpin' + (on ? ' on' : '');
-    el.innerHTML = `<span class="favdot">${svg('heart', on ? 14 : 11, '#fff', 2.4)}</span><span class="favlab">${esc(p.name)}</span>`;
-    el.addEventListener('click', (ev) => { ev.stopPropagation(); if (POI) closePoi(true); S.ui.selPlace = p.id; save(); if (sheetUp) setSheet(false); refreshMap(); });
-    return new mapboxgl.Marker({ element: el, anchor: 'top', offset: [0, -11] }).setLngLat([p.lng, p.lat]).addTo(map);
-  }
   const el = document.createElement('button'); el.dataset.mb = '1'; el.setAttribute('aria-label', (n ? n + '번 ' : '') + p.name);
   el.style.cssText = 'border:0;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center';
   const label = `<span style="font:500 11px 'Noto Sans KR',sans-serif;color:#1C2B2E;text-shadow:0 0 3px #fff,0 0 3px #fff;white-space:nowrap;margin-top:2px">${esc(p.name)}</span>`;
@@ -750,7 +745,9 @@ function refreshMap() {
   markers.forEach((m) => m.remove()); numMarkers.forEach((m) => m.remove()); markers = []; numMarkers = [];
   const f = S.ui.placeFilter, stops = [], ids = stops.map((p) => p.id);
   // 지도에는 그날 일정(번호 핀)만 크게 표시. 다른 저장 장소는 맛집·카페 버튼을 눌렀을 때나 고른 장소만 보여 줌
-  S.places.filter((p) => p.lat && !ids.includes(p.id) && ((f === 'fav' ? p.fav : f !== 'all' ? p.cat === f : false) || p.id === S.ui.selPlace)).forEach((p) => markers.push(mbPin(p, 0, p.id === S.ui.selPlace)));
+  const shown = S.places.filter((p) => p.lat && !ids.includes(p.id) && ((f === 'fav' ? p.fav : f !== 'all' ? p.cat === f : false) || p.id === S.ui.selPlace));
+  shown.filter((p) => !p.fav).forEach((p) => markers.push(mbPin(p, 0, p.id === S.ui.selPlace)));
+  setFavLayer(shown.filter((p) => p.fav));
   stops.forEach((p, i) => numMarkers.push(mbPin(p, i + 1, p.id === S.ui.selPlace)));
   const track = (S.track && S.track[S.ui.day]) || [];
   map.getSource('track').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: track.length > 1 ? track : [] } });
@@ -780,6 +777,38 @@ function hideFerries(m) {
     if (!m.getLayer('ferry-mask')) m.addLayer({ id: 'ferry-mask', type: 'line', source: 'streets8', 'source-layer': 'road', filter: ['match', ['get', 'class'], ['ferry', 'ferry_auto'], true, false], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': typeof water === 'string' ? water : '#BFE6EA', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 3, 14, 5, 18, 9] }, slot: 'middle' });
   } catch (e) { console.warn('ferry', e); }
 }
+// 즐겨찾기: 지도 위에 직접 그리는 하트 핀(겹쳐도 깔끔) + 확대(15.5 이상)하면 가게 이름
+function heartPinImage(big) {
+  const r = 2, w = (big ? 34 : 26) * r, h = (big ? 42 : 32) * r, c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'), cx = w / 2, R = w / 2 - 2 * r;
+  g.shadowColor = 'rgba(0,0,0,.28)'; g.shadowBlur = 3 * r; g.shadowOffsetY = 1 * r;
+  g.beginPath(); g.moveTo(cx, h - 2 * r); g.bezierCurveTo(cx - R * 0.35, h - R * 0.9, cx - R, R * 1.45, cx - R, R + 2 * r);
+  g.arc(cx, R + 2 * r, R, Math.PI, 0); g.bezierCurveTo(cx + R, R * 1.45, cx + R * 0.35, h - R * 0.9, cx, h - 2 * r); g.closePath();
+  g.fillStyle = '#E5484D'; g.fill(); g.shadowColor = 'transparent'; g.lineWidth = 2 * r; g.strokeStyle = '#fff'; g.stroke();
+  const hs = R * 0.55, hy = R + 2 * r; g.beginPath(); g.moveTo(cx, hy + hs * 0.9);
+  g.bezierCurveTo(cx - hs * 1.6, hy - hs * 0.1, cx - hs * 0.7, hy - hs * 1.3, cx, hy - hs * 0.45);
+  g.bezierCurveTo(cx + hs * 0.7, hy - hs * 1.3, cx + hs * 1.6, hy - hs * 0.1, cx, hy + hs * 0.9); g.fillStyle = '#fff'; g.fill();
+  return { width: w, height: h, data: g.getImageData(0, 0, w, h).data };
+}
+function setupFavLayer() {
+  try {
+    if (!map.hasImage('fav-pin')) map.addImage('fav-pin', heartPinImage(false), { pixelRatio: 2 });
+    if (!map.hasImage('fav-pin-on')) map.addImage('fav-pin-on', heartPinImage(true), { pixelRatio: 2 });
+    map.addSource('favs', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({ id: 'fav-sym', type: 'symbol', source: 'favs', slot: 'top',
+      layout: { 'icon-image': ['case', ['get', 'on'], 'fav-pin-on', 'fav-pin'], 'icon-anchor': 'bottom', 'icon-allow-overlap': true, 'icon-ignore-placement': true,
+        'symbol-sort-key': ['case', ['get', 'on'], 0, 1],
+        'text-field': ['step', ['zoom'], ['case', ['get', 'on'], ['get', 'name'], ''], 15.5, ['get', 'name']],
+        'text-size': 11.5, 'text-anchor': 'top', 'text-offset': [0, 0.25], 'text-optional': true, 'text-max-width': 9 },
+      paint: { 'text-color': '#B4232A', 'text-halo-color': '#ffffff', 'text-halo-width': 1.6 } });
+    map.addInteraction('fav-tap', { type: 'click', target: { layerId: 'fav-sym' }, handler: (e) => { poiTapAt = Date.now(); selectFav(e.feature.properties.id); return true; } });
+  } catch (e) { console.warn('fav layer', e); }
+}
+function selectFav(id) { if (POI) closePoi(true); S.ui.selPlace = id; save(); if (sheetUp) setSheet(false); refreshMap(); }
+function setFavLayer(list) {
+  const src = map && map.getSource && map.getSource('favs'); if (!src) return;
+  src.setData({ type: 'FeatureCollection', features: list.map((p) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: { id: p.id, name: p.name, on: p.id === S.ui.selPlace } })) });
+}
 function setupPoiTap() {
   if (!map.addInteraction) return;
   try { map.setConfigProperty('basemap', 'showPointOfInterestLabels', true); map.setConfigProperty('basemap', 'densityPointOfInterestLabels', 4); } catch (e) {}
@@ -787,6 +816,7 @@ function setupPoiTap() {
   try {
     map.addInteraction('poi-tap', { type: 'click', target, handler: (e) => {
       poiTapAt = Date.now();
+      try { const hit = e.point && map.getLayer('fav-sym') && map.queryRenderedFeatures(e.point, { layers: ['fav-sym'] }); if (hit && hit.length) { selectFav(hit[0].properties.id); return true; } } catch (er) {}
       const f = e.feature, c = f.geometry && f.geometry.coordinates; if (!c) return true;
       openPoi({ name: (f.properties && f.properties.name) || '', lng: c[0], lat: c[1], cat: poiCat(f.properties.class, f.properties.maki) });
       return true;
