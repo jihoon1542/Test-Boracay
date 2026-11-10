@@ -1403,8 +1403,8 @@ function placeSheet(p) {
           <button class="icon" style="width:36px;height:36px" data-act="delMenu" data-pid="${p.id}" data-id="${m.id}" aria-label="메뉴 삭제">${svg('close', 14, '#5B6B6E')}</button>
         </div>`).join('')}</div>` : ''}
       <form class="row" data-form="menu" data-pid="${p.id}" style="gap:6px">
-        <input name="name" placeholder="먹어 본 메뉴" aria-label="메뉴 이름" required style="flex:1;min-width:0;height:44px;border:1px solid var(--line);border-radius:12px;padding:0 10px">
-        <input name="price" placeholder="₱ 가격" aria-label="가격(페소)" inputmode="decimal" style="width:84px;height:44px;border:1px solid var(--line);border-radius:12px;padding:0 10px">
+        <input name="name" placeholder="먹어 본 메뉴" aria-label="메뉴 이름" required style="flex:1;min-width:0;height:44px;border:1px solid var(--line);border-radius:14px;padding:0 10px">
+        <input name="price" placeholder="₱ 가격" aria-label="가격(페소)" inputmode="decimal" style="width:84px;height:44px;border:1px solid var(--line);border-radius:14px;padding:0 10px">
         <button class="btn ghost" type="submit" style="height:44px">추가</button>
       </form>
       ${p.menu.length ? `<span class="small muted">1페소 ≈ ${rate.toFixed(1)}원으로 계산해요.</span>` : ''}

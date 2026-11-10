@@ -38,7 +38,7 @@ h2{margin:0;font-size:17px}
 .switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
 .switch[aria-pressed="true"]{background:var(--teal)}
 .switch[aria-pressed="true"]::after{left:21px}
-.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:#EAEFEB;border-radius:12px;padding:4px}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:#EAEFEB;border-radius:14px;padding:4px}
 .seg button{height:36px;border:0;border-radius:9px;background:transparent;font-size:13px;color:var(--muted)}
 .seg button.on{background:#fff;color:var(--deep);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .daytabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:8px}
@@ -48,7 +48,15 @@ h2{margin:0;font-size:17px}
 .daytab.on{background:var(--deep);border-color:var(--deep);color:#fff}
 .daytab.on span{color:#D7EEF0}
 .field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);font-weight:500}
-.field input,.field select,.field textarea{min-width:0;width:100%;height:46px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:#fff;font-size:15px}
+.field input,.field select,.field textarea{min-width:0;width:100%;height:46px;border:1px solid var(--line);border-radius:14px;padding:0 12px;background-color:#fff;font-size:15px}
+/* 입력칸 모양 통일: 사파리 기본 모양(각진 선택칸, 날짜·시간칸)을 끄고 모두 같은 둥근 칸으로 */
+input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{-webkit-appearance:none;appearance:none;border-radius:14px}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235B6B6E' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:12px 8px}
+.field select,.itrow select{padding-right:36px}
+input[type=date],input[type=time]{display:flex;align-items:center;text-align:left;line-height:normal}
+input::-webkit-date-and-time-value{text-align:left}
+.field input:focus,.field select:focus,.field textarea:focus,.itrow input:focus{outline:none;border-color:#17806D;box-shadow:0 0 0 3px rgba(23,128,109,.12)}
+.field input[type=file]{padding-top:11px}
 .field textarea{height:110px;padding:10px 12px;resize:vertical}
 .list-row{display:flex;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid #EEF0EC}
 .list-row:last-child{border-bottom:0}
@@ -128,7 +136,7 @@ body.onmap #sbar{height:calc(env(safe-area-inset-top) + 18px);background:linear-
 /* 아이폰 홈 화면 앱에서 화면 맨 아래까지 채우기 (100% 높이가 하단 여백 위에서 끊기는 문제) */
 html,body{min-height:100%;min-height:-webkit-fill-available}
 
-.seg{display:flex;background:#EEF1EF;border-radius:12px;padding:3px;flex-shrink:0}
+.seg{display:flex;background:#EEF1EF;border-radius:14px;padding:3px;flex-shrink:0}
 .seg label{position:relative}
 .seg input{position:absolute;opacity:0;pointer-events:none}
 .seg span{display:flex;align-items:center;height:38px;padding:0 12px;border-radius:9px;font-size:14px;font-weight:700;color:#5B6B6E;cursor:pointer}
@@ -213,7 +221,7 @@ nav.tabs button{height:56px;justify-content:center;gap:4px;padding:0}
 .tkstep b{font-size:16px}
 .tkstep a{display:inline-flex;align-items:center;gap:3px;color:#17806D;font-weight:500}
 .itrow{display:flex;flex-direction:column;gap:8px;background:#E8EFEC;border-radius:14px;padding:10px}
-.itrow input{height:44px;border:1px solid #DCE3E0;border-radius:10px;padding:0 10px;font-size:15px;background:#fff;width:100%;min-width:0}
+.itrow input{height:44px;border:1px solid var(--line);border-radius:14px;padding:0 10px;font-size:15px;background-color:#fff;width:100%;min-width:0}
 /* 더보기 여행 상태 카드: 흰 카드 + 초록 포인트 */
 .tstat{border-radius:22px;padding:18px 16px 14px;background:#fff;box-shadow:0 1px 0 rgba(16,38,43,.06);display:flex;flex-direction:column;gap:12px}
 .tsTop{display:flex;flex-direction:column;gap:2px}
@@ -251,3 +259,6 @@ nav.tabs button{height:56px;justify-content:center;gap:4px;padding:0}
 .tsay{position:absolute;left:0;right:0;top:calc(55% + 110px);text-align:center;font-size:22px;font-weight:700;color:#7A5A2E;animation:tsay 1.8s ease-in-out infinite}
 @keyframes tsay{0%,100%{opacity:.55}50%{opacity:1}}
 .tclose{position:absolute;left:0;right:0;bottom:calc(28px + env(safe-area-inset-bottom));text-align:center;font-size:13px;color:#9A7D52}
+/* 체크박스도 둥근 모양으로 */
+input[type=checkbox]{-webkit-appearance:none;appearance:none;width:22px;height:22px;border:1.5px solid #C9D3CF;border-radius:7px;background:#fff center/14px no-repeat;flex-shrink:0;margin:0;vertical-align:middle}
+input[type=checkbox]:checked{background-color:#17806D;border-color:#17806D;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
