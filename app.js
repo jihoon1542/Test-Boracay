@@ -1115,7 +1115,7 @@ function tripStatus(t, days, dl) {
        tile('money', during ? '쓴 돈' : '예산', during ? man(spent) : budget ? man(budget - spent) : '설정', during && budget ? `${man(budget - spent)} 남음` : during ? '' : budget ? '남음' : '여행 설정에서')];
   return `<div class="tstat">
     <div class="tsTop"><b class="num">${big}</b><span>${cap}</span></div>
-    ${nx && !after ? `<button class="tsNext" data-act="openTicket" data-id="${nx.t.id}"><span>다음 예약</span><b>${fmtDate(nx.it.date)}${nx.it.time ? ' ' + esc(nx.it.time) : ''} · ${esc(itemLabel(nx.t, nx.it, tItems(nx.t).indexOf(nx.it)))}</b>${svg('chev', 16, '#fff')}</button>` : ''}
+    ${nx && !after ? `<button class="tsNext" data-act="openTicket" data-id="${nx.t.id}"><span>다음 예약</span><b>${fmtDate(nx.it.date)}${nx.it.time ? ' ' + esc(nx.it.time) : ''} · ${esc(itemLabel(nx.t, nx.it, tItems(nx.t).indexOf(nx.it)))}</b>${svg('chev', 16, '#17806D')}</button>` : ''}
     <div class="tsTiles">${tiles.join('')}</div>
   </div>`;
 }

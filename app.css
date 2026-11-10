@@ -214,16 +214,16 @@ nav.tabs button{height:56px;justify-content:center;gap:4px;padding:0}
 .tkstep a{display:inline-flex;align-items:center;gap:3px;color:#17806D;font-weight:500}
 .itrow{display:flex;flex-direction:column;gap:8px;background:#E8EFEC;border-radius:14px;padding:10px}
 .itrow input{height:44px;border:1px solid #DCE3E0;border-radius:10px;padding:0 10px;font-size:15px;background:#fff;width:100%;min-width:0}
-/* 더보기 여행 상태 카드 */
-.tstat{border-radius:22px;padding:18px 16px 14px;color:#fff;background:linear-gradient(135deg,#F7B267 0%,#F27059 42%,#B5577C 74%,#5E5A9C 100%);box-shadow:0 6px 18px rgba(181,87,124,.22);display:flex;flex-direction:column;gap:12px}
+/* 더보기 여행 상태 카드: 흰 카드 + 초록 포인트 */
+.tstat{border-radius:22px;padding:18px 16px 14px;background:#fff;box-shadow:0 1px 0 rgba(16,38,43,.06);display:flex;flex-direction:column;gap:12px}
 .tsTop{display:flex;flex-direction:column;gap:2px}
-.tsTop b{font-size:34px;line-height:1.1;letter-spacing:-.5px}
-.tsTop span{font-size:13px;opacity:.92}
-.tsNext{display:flex;align-items:center;gap:8px;border:0;background:rgba(255,255,255,.18);border-radius:12px;padding:9px 10px 9px 12px;color:#fff;text-align:left}
-.tsNext span{font-size:12px;opacity:.85;white-space:nowrap}
+.tsTop b{font-size:32px;line-height:1.1;letter-spacing:-.5px;color:#17806D}
+.tsTop span{font-size:13px;color:var(--muted)}
+.tsNext{display:flex;align-items:center;gap:8px;border:0;background:#E6F3EF;border-radius:12px;padding:9px 10px 9px 12px;color:var(--ink);text-align:left}
+.tsNext span{font-size:12px;color:#17806D;font-weight:700;white-space:nowrap}
 .tsNext b{flex:1;min-width:0;font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tsTiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.tsTile{border:0;background:#fff;border-radius:14px;padding:10px 10px 9px;text-align:left;display:flex;flex-direction:column;gap:1px;min-width:0}
-.tsTile span{font-size:12px;color:#5B6B6E}
-.tsTile b{font-size:17px;color:#10262B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tsTile i{font-style:normal;font-size:11px;color:#5B6B6E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tsTile{border:0;background:#F4F6F3;border-radius:14px;padding:10px 10px 9px;text-align:left;display:flex;flex-direction:column;gap:1px;min-width:0;color:var(--ink)}
+.tsTile span{font-size:12px;color:var(--muted)}
+.tsTile b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tsTile i{font-style:normal;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
