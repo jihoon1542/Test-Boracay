@@ -725,7 +725,8 @@ function applyAppTheme(m = map) {
   (m.getStyle().imports || []).forEach((im) => Object.entries(cfg).forEach(([k, v]) => { try { m.setConfigProperty(im.id, k, v); } catch (e) {} }));
 }
 /* ----- 🐢 숨은 거북이: 호핑투어 바다(크로커다일 섬 근처)에서 헤엄침. 누르면 얼굴 거북이가 엉금엉금 ----- */
-const TURTLE_AT = [121.9505, 11.9478];
+// 레드웨일 호핑투어 미팅 장소(아스토리아 리조트 앞 바다)에서 헤엄침. 아스토리아 위치를 알면 거기서 바다 쪽(서쪽)으로 조금
+const turtleAt = () => { const a = placeById('astoria'); return a && a.lat ? [a.lng - 0.0016, a.lat + 0.0002] : [121.9128, 11.9737]; };
 const TURTLE_FACE = './turtle-face.jpg'; // 저장소에 이 이름으로 정사각형 얼굴 사진을 올리면 거북이 머리가 됨
 const turtleSvg = (head) => `<svg viewBox="-75 -72 185 144" aria-hidden="true">
   <g class="tfl tfl1"><ellipse cx="30" cy="-44" rx="13" ry="22" transform="rotate(-35 30 -44)" fill="#7DBE7A"/></g>
@@ -746,8 +747,9 @@ function addTurtle() {
   const el = document.createElement('button');
   el.className = 'turtle'; el.dataset.mb = '1'; el.dataset.act = 'turtle'; el.setAttribute('aria-label', '바다거북');
   el.innerHTML = `<span class="tswim">${turtleSvg(smallHead)}</span>`;
-  turtleMarker = new mapboxgl.Marker({ element: el }).setLngLat(TURTLE_AT).addTo(map);
-  const vis = () => el.classList.toggle('show', map.getZoom() >= 13.4);
+  turtleMarker = new mapboxgl.Marker({ element: el }).setLngLat(turtleAt()).addTo(map);
+  // 확대할수록 커짐 (줌 16에서 22px, 한 단계마다 2배). 너무 멀리서는 숨김
+  const vis = () => { const z = map.getZoom(), px = Math.max(8, Math.min(72, 22 * Math.pow(2, z - 16))); el.classList.toggle('show', z >= 14.6); el.style.setProperty('--ts', px.toFixed(1) + 'px'); };
   map.on('zoom', vis); vis();
 }
 function turtleShow() {
@@ -795,6 +797,7 @@ function refreshMap() {
   const shown = S.places.filter((p) => p.lat && ((f === 'fav' ? p.fav : f !== 'all' ? p.cat === f : false) || p.id === S.ui.selPlace));
   shown.filter((p) => !p.fav).forEach((p) => markers.push(mbPin(p, 0, p.id === S.ui.selPlace)));
   setFavLayer(shown.filter((p) => p.fav));
+  if (turtleMarker) turtleMarker.setLngLat(turtleAt());
   const track = (S.track && S.track[S.ui.day]) || [];
   map.getSource('track').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: track.length > 1 ? track : [] } });
   map.getSource('nav').setData(NAV ? { type: 'Feature', geometry: { type: 'LineString', coordinates: NAV.geo } } : { type: 'FeatureCollection', features: [] });
@@ -1512,6 +1515,21 @@ function ticketForm(existing, cat) {
       <button class="btn" type="submit">${existing ? '저장하기' : '추가하기'}</button>
     </form>`);
 }
+// 예약에 적힌 장소 글자를 앱에 저장된 장소와 연결 (예: "아스토리아 리조트 앞 해변" → Astoria Boracay). 여러 개면 글에서 먼저 나온 곳
+const PLACE_ALIAS = [['아스토리아', 'astoria'], ['무니무니', 'munimuni'], ['크림슨', 'crimson'], ['헤난', 'henann'], ['칼리보', '칼리보'], ['공항', '칼리보']];
+function placeFromText(text) {
+  const t = (text || '').toLowerCase(); let best = null, at = 1e9;
+  const take = (idx, p) => { if (idx >= 0 && p && p.lat && idx < at) { at = idx; best = p; } };
+  PLACE_ALIAS.forEach(([k, v]) => take(t.indexOf(k), S.places.find((p) => p.name.toLowerCase().includes(v))));
+  S.places.forEach((p) => { const n = p.name.toLowerCase(); if (n.length >= 4) take(t.indexOf(n), p); });
+  return best;
+}
+function itemOnMap(q) {
+  const p = placeFromText(q);
+  if (p) { openOnMap(p); return; }
+  closeSheet(); S.ui.tab = 'map'; S.ui.sheetQ = q; save(); render();
+  requestAnimationFrame(() => { const inp = $('#placeSearch'); if (inp) { inp.value = q; $('#msheet').classList.add('hasq'); renderSheetList(); setSheet(true); } });
+}
 function ticketDetail(t) {
   if (!t) return;
   const nx = nextItem(), today = todayStr();
@@ -1528,7 +1546,7 @@ function ticketDetail(t) {
     <div class="tkline">${tItems(t).map((it, i) => `<div class="tkstep ${it.date && it.date < today ? 'past' : ''} ${nx && nx.it === it ? 'next' : ''}">
       <span class="tkwhen num">${it.date ? fmtDate(it.date) : '날짜 미정'}${it.time ? ' · ' + esc(it.time) : ''}${nx && nx.it === it ? ' <span class="tknext">다음</span>' : ''}</span>
       <b>${esc(itemLabel(t, it, i))}</b>
-      ${it.place ? `<a href="${gSearch({ q: it.place + ' ' + (S.trip.city || '') })}" target="_blank" rel="noopener" class="small">${svg('pin', 13, '#17806D')} ${esc(it.place)} ↗</a>` : ''}
+      ${it.place ? `<button class="tkplace" data-act="itemOnMap" data-q="${esc(it.place)}">${svg('pin', 13, '#17806D')} ${esc(it.place)}<span>지도에서 보기 ›</span></button>` : ''}
       ${it.note ? `<span class="small muted">${esc(it.note)}</span>` : ''}
     </div>`).join('')}</div>
     <div class="full">${t.imgs.map((id) => `<img data-img="${id}" alt="예약 캡처">`).join('')}</div>
@@ -2085,6 +2103,7 @@ document.addEventListener('click', (e) => {
     case 'addTicket': ticketForm(null, b.dataset.cat); break;
     case 'addItemRow': { const box = $('#itRows'); if (!box) break; const last = box.lastElementChild; const d = last ? last.querySelector('[name=i_date]').value : currentDay(); box.insertAdjacentHTML('beforeend', itemRow({ date: d })); box.lastElementChild.querySelector('[name=i_title]').focus(); break; }
     case 'delItemRow': { const r = b.closest('.itrow'); if (r) r.remove(); break; }
+    case 'itemOnMap': itemOnMap(b.dataset.q); break;
     case 'openTicket': ticketDetail(S.tickets.find((t) => t.id === id)); break;
     case 'editTicket': ticketForm(S.tickets.find((t) => t.id === id)); break;
     case 'delTicket': { const t = S.tickets.find((x) => x.id === id); if (!t) break;

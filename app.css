@@ -236,13 +236,13 @@ nav.tabs button{height:56px;justify-content:center;gap:4px;padding:0}
 .tsTile b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tsTile i{font-style:normal;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* 🐢 숨은 거북이 */
-.turtle{border:0;background:none;padding:0;width:34px;height:34px;opacity:0;pointer-events:none;transition:opacity .4s}
+.turtle{--ts:22px;border:0;background:none;padding:0;width:calc(var(--ts) * 2);height:calc(var(--ts) * 2);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s}
 .turtle.show{opacity:1;pointer-events:auto}
-.tswim{display:block;width:34px;height:34px;animation:tcircle 26s linear infinite}
-.tswim svg{width:34px;height:26px;margin-top:4px;transform:rotate(90deg);filter:drop-shadow(0 2px 2px rgba(20,70,80,.25))}
+.tswim{display:block;width:var(--ts);height:var(--ts);animation:tcircle 26s linear infinite}
+.tswim svg{display:block;width:var(--ts);height:calc(var(--ts) * .78);margin-top:calc(var(--ts) * .11);transform:rotate(90deg);filter:drop-shadow(0 2px 2px rgba(20,70,80,.25))}
 .turtle .tfl{transform-box:fill-box;transform-origin:center;animation:tpaddle 1.6s ease-in-out infinite}
 .turtle .tfl2,.turtle .tfl3{animation-delay:-.8s}
-@keyframes tcircle{from{transform:rotate(0deg) translateX(16px)}to{transform:rotate(360deg) translateX(16px)}}
+@keyframes tcircle{from{transform:rotate(0deg) translateX(calc(var(--ts) * .45))}to{transform:rotate(360deg) translateX(calc(var(--ts) * .45))}}
 @keyframes tpaddle{0%,100%{transform:rotate(0)}50%{transform:rotate(22deg)}}
 .tegg{position:absolute;inset:0;z-index:60;background:linear-gradient(180deg,#BFE6EA 0%,#9ED6DC 55%,#F4E3B4 55%,#F4E3B4 100%);overflow:hidden;animation:tin .35s ease-out}
 .tegg.bye{opacity:0;transition:opacity .35s}
@@ -262,3 +262,5 @@ nav.tabs button{height:56px;justify-content:center;gap:4px;padding:0}
 /* 체크박스도 둥근 모양으로 */
 input[type=checkbox]{-webkit-appearance:none;appearance:none;width:22px;height:22px;border:1.5px solid #C9D3CF;border-radius:7px;background:#fff center/14px no-repeat;flex-shrink:0;margin:0;vertical-align:middle}
 input[type=checkbox]:checked{background-color:#17806D;border-color:#17806D;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+.tkplace{display:flex;align-items:center;gap:4px;border:0;background:none;padding:2px 0;color:#17806D;font-weight:500;font-size:13px;text-align:left;width:100%}
+.tkplace span{margin-left:auto;padding-left:8px;font-size:12px;font-weight:700;white-space:nowrap}
