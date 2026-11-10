@@ -247,15 +247,19 @@ nav.tabs button{height:56px;justify-content:center;gap:4px;padding:0}
 .tegg{position:absolute;inset:0;z-index:60;background:linear-gradient(180deg,#BFE6EA 0%,#9ED6DC 55%,#F4E3B4 55%,#F4E3B4 100%);overflow:hidden;animation:tin .35s ease-out}
 .tegg.bye{opacity:0;transition:opacity .35s}
 @keyframes tin{from{opacity:0}to{opacity:1}}
-.twalk{position:absolute;left:-250px;top:calc(55% - 92px);width:240px;animation:tcrawl 11s linear infinite}
+.twalk{position:absolute;left:-300px;top:calc(55% - 150px);width:290px;animation:tcrawl 13s linear infinite}
 .tegg.hasface .tfallback{display:none}
-.tbob{animation:tstep .9s steps(2) infinite}
-.tbob svg{width:240px;height:187px;filter:drop-shadow(0 8px 6px rgba(120,100,60,.25))}
-.tegg .tfl{transform-box:fill-box;transform-origin:center;animation:tleg .9s ease-in-out infinite}
-.tegg .tfl2,.tegg .tfl3{animation-delay:-.45s}
-@keyframes tcrawl{from{left:-250px}to{left:calc(100% + 10px)}}
-@keyframes tstep{0%{transform:translateY(0) rotate(-1.5deg)}100%{transform:translateY(-5px) rotate(1.5deg)}}
-@keyframes tleg{0%,100%{transform:rotate(-14deg)}50%{transform:rotate(14deg)}}
+.tbob{animation:tstep 1.1s ease-in-out infinite}
+.tbob svg{display:block;width:290px;height:196px;overflow:visible}
+@keyframes tcrawl{from{left:-300px}to{left:calc(100% + 10px)}}
+@keyframes tstep{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-4px) rotate(-1deg)}50%{transform:translateY(0) rotate(0)}75%{transform:translateY(-4px) rotate(1deg)}}
+.tegg .tleg{transform-box:fill-box;transform-origin:50% 0;animation:tlegs 1.1s ease-in-out infinite}
+.tegg .tl2,.tegg .tl3{animation-delay:-.55s}
+@keyframes tlegs{0%,100%{transform:rotate(-16deg)}50%{transform:rotate(16deg)}}
+.tegg .tneck{transform-box:view-box;transform-origin:226px 128px;animation:tneck 2.2s ease-in-out infinite}
+@keyframes tneck{0%,100%{transform:translate(-4px,3px) rotate(2deg)}50%{transform:translate(6px,-3px) rotate(-3deg)}}
+.tegg .tphoto{transform-box:fill-box;transform-origin:50% 90%;animation:thead 1.1s ease-in-out infinite}
+@keyframes thead{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
 .tsay{position:absolute;left:0;right:0;top:calc(55% + 110px);text-align:center;font-size:22px;font-weight:700;color:#7A5A2E;animation:tsay 1.8s ease-in-out infinite}
 @keyframes tsay{0%,100%{opacity:.55}50%{opacity:1}}
 .tclose{position:absolute;left:0;right:0;bottom:calc(28px + env(safe-area-inset-bottom));text-align:center;font-size:13px;color:#9A7D52}

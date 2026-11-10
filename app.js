@@ -727,7 +727,7 @@ function applyAppTheme(m = map) {
 /* ----- 🐢 숨은 거북이: 호핑투어 바다(크로커다일 섬 근처)에서 헤엄침. 누르면 얼굴 거북이가 엉금엉금 ----- */
 // 레드웨일 호핑투어 미팅 장소(아스토리아 리조트 앞 바다)에서 헤엄침. 아스토리아 위치를 알면 거기서 바다 쪽(서쪽)으로 조금
 const turtleAt = () => { const a = placeById('astoria'); return a && a.lat ? [a.lng - 0.0016, a.lat + 0.0002] : [121.9128, 11.9737]; };
-const TURTLE_FACE = './turtle-face.jpg'; // 저장소에 이 이름으로 정사각형 얼굴 사진을 올리면 거북이 머리가 됨
+const TURTLE_FACE = './turtle-face.png'; // 배경을 지운 얼굴 사진(투명 PNG). 없으면 그림 얼굴이 나옴
 const turtleSvg = (head) => `<svg viewBox="-75 -72 185 144" aria-hidden="true">
   <g class="tfl tfl1"><ellipse cx="30" cy="-44" rx="13" ry="22" transform="rotate(-35 30 -44)" fill="#7DBE7A"/></g>
   <g class="tfl tfl2"><ellipse cx="30" cy="44" rx="13" ry="22" transform="rotate(35 30 44)" fill="#7DBE7A"/></g>
@@ -752,15 +752,30 @@ function addTurtle() {
   const vis = () => { const z = map.getZoom(), px = Math.max(8, Math.min(72, 22 * Math.pow(2, z - 16))); el.classList.toggle('show', z >= 14.6); el.style.setProperty('--ts', px.toFixed(1) + 'px'); };
   map.on('zoom', vis); vis();
 }
+// 옆모습 거북이: 다리를 번갈아 디디며 기어가고, 목을 쭉 내밀었다 넣었다 함. 목 끝에 얼굴
+const turtleSide = () => `<svg viewBox="0 -40 340 230" aria-hidden="true">
+  <ellipse cx="150" cy="182" rx="120" ry="8" fill="rgba(110,85,40,.18)"/>
+  <g class="tleg tl2"><path d="M86 128 h26 v42 q0 8 -8 8 h-12 q-8 0 -8 -8z" fill="#5E9C5A"/></g>
+  <g class="tleg tl4"><path d="M186 128 h26 v42 q0 8 -8 8 h-12 q-8 0 -8 -8z" fill="#5E9C5A"/></g>
+  <path d="M42 140 l-22 10 22 4z" fill="#7DBE7A"/>
+  <g class="tneck">
+    <path d="M224 128 C244 126 256 116 264 102" stroke="#7DBE7A" stroke-width="34" stroke-linecap="round" fill="none"/>
+    <path d="M238 127 C250 123 258 115 262 108" stroke="#93CC8F" stroke-width="8" stroke-linecap="round" fill="none" opacity=".7"/>
+    <g class="tfallback"><circle cx="260" cy="76" r="30" fill="#7DBE7A"/><circle cx="252" cy="68" r="3.6" fill="#1C2B2E"/><circle cx="270" cy="68" r="3.6" fill="#1C2B2E"/><path d="M252 84 q9 7 18 0" stroke="#1C2B2E" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="244" cy="80" r="4" fill="#F5A3A3" opacity=".7"/><circle cx="278" cy="80" r="4" fill="#F5A3A3" opacity=".7"/></g>
+    <image class="tphoto" href="${TURTLE_FACE}?v=3" x="222" y="-6" width="104" height="104"/>
+  </g>
+  <path d="M34 140 Q40 44 140 38 Q236 44 246 140 Z" fill="#4F8F55"/>
+  <path d="M50 136 Q58 58 140 53 Q222 58 230 136 Z" fill="#6FAF6B"/>
+  <path d="M108 60 L140 54 L172 60 L180 96 L140 106 L100 96 Z M100 96 L66 104 M180 96 L214 104 M140 106 L140 136 M108 60 L84 74 M172 60 L196 74" stroke="#4F8F55" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" fill="#8CC788"/>
+  <rect x="28" y="130" width="226" height="18" rx="9" fill="#C8B26E"/>
+  <rect x="28" y="130" width="226" height="6" rx="3" fill="#D9C584"/>
+  <g class="tleg tl1"><path d="M62 134 h30 v42 q0 9 -9 9 h-14 q-7 0 -7 -7z" fill="#7DBE7A"/><path d="M64 182 h4 M72 183 h4 M80 182 h4" stroke="#4F8F55" stroke-width="2.5" stroke-linecap="round"/></g>
+  <g class="tleg tl3"><path d="M196 134 h30 v42 q0 9 -9 9 h-14 q-7 0 -7 -7z" fill="#7DBE7A"/><path d="M200 182 h4 M208 183 h4 M216 182 h4" stroke="#4F8F55" stroke-width="2.5" stroke-linecap="round"/></g>
+</svg>`;
 function turtleShow() {
   const box = document.createElement('div');
   box.className = 'tegg'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', '거북이');
-  const head = `<defs><clipPath id="tface"><circle cx="72" cy="0" r="30"/></clipPath></defs>
-    <circle cx="72" cy="0" r="33" fill="#7DBE7A"/>
-    <g clip-path="url(#tface)"><circle cx="72" cy="0" r="30" fill="#7DBE7A"/>
-      <g class="tfallback"><circle cx="64" cy="-8" r="3.6" fill="#1C2B2E"/><circle cx="80" cy="-8" r="3.6" fill="#1C2B2E"/><path d="M64 8 q8 7 16 0" stroke="#1C2B2E" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="58" cy="4" r="4" fill="#F5A3A3" opacity=".7"/><circle cx="86" cy="4" r="4" fill="#F5A3A3" opacity=".7"/></g>
-      <image class="tphoto" href="${TURTLE_FACE}?v=1" x="42" y="-30" width="60" height="60" preserveAspectRatio="xMidYMid slice"/></g>`;
-  box.innerHTML = `<div class="twalk"><div class="tbob">${turtleSvg(head)}</div></div><p class="tsay">엉금엉금…</p><p class="tclose">아무 데나 누르면 바다로 돌아가요</p>`;
+  box.innerHTML = `<div class="twalk"><div class="tbob">${turtleSide()}</div></div><p class="tsay">엉금엉금…</p><p class="tclose">아무 데나 누르면 바다로 돌아가요</p>`;
   const img = box.querySelector('.tphoto');
   img.addEventListener('load', () => box.classList.add('hasface'));
   img.addEventListener('error', () => img.remove());
