@@ -1047,7 +1047,7 @@ const CHECK_TEMPLATE = [
 ];
 function ensureTrip(t) {
   t.id = t.id || uid();
-  t.trip = Object.assign({ name:'보라카이 여행', city:'Boracay', lat:BORACAY.lat, lng:BORACAY.lng, tz:'Asia/Manila', members:['나','동행'], budget:1500000, cover:null }, t.trip || {});
+  t.trip = Object.assign({ name:'보라카이 여행', city:'Boracay', lat:BORACAY.lat, lng:BORACAY.lng, tz:'Asia/Manila', members:['나','동행'], budget:0, cover:null }, t.trip || {});
   t.alarm = t.alarm || { offset:30, off:{}, fired:{} };
   t.todos = t.todos || {}; t.places = t.places || []; t.tickets = t.tickets || [];
   t.checklist = t.checklist || []; t.expenses = t.expenses || []; t.journal = t.journal || [];
@@ -1068,6 +1068,7 @@ function ensureTrip(t) {
   if (t.planV < 2 && t.trip.start === '2026-12-16') applyBookings(t);
   if (t.planV < 3 && t.trip.start === '2026-12-16') applyFlightTimes(t);
   if (t.planV < 4) groupTickets(t);
+  if (t.planV < 5) { if (+t.trip.budget === 1500000) t.trip.budget = 0; t.planV = 5; } // 정한 적 없는 기본 예산 지우기
   if (t.ui.tab === 'home') t.ui.tab = 'map'; // 홈은 지도로 합쳐짐
   if (!t.favV) {
     FAV_SEED.forEach(([gid, name, cat, mine]) => {
@@ -1140,7 +1141,7 @@ function viewMore() {
     ['check', '체크리스트', 'checksq', ck.length ? `준비 ${ckDone} / ${ck.length}` : '기본 준비물로 시작'],
     ['money', '경비 · 정산', 'coin', S.expenses.length ? `${S.expenses.length}건 · ${won(settlement().total)}` : '페소로 적으면 원화로 바꿔줘요'],
     ['sunset', '날씨 · 일몰', 'sun', `일몰 ${fmtTime(sunTimes(currentDay()).set)} · 선셋 알람`],
-    ['journal', '여행 기록', 'book', `${S.journal.length}개의 순간`]
+    ['journal', '여행 사진 · 기록', 'img', S.journal.length ? `사진 ${S.journal.filter((j) => j.photo).length}장 · 메모 ${S.journal.filter((j) => !j.photo).length}개` : '사진을 폴라로이드처럼 붙여 둬요']
   ];
   return `<div class="stack" style="gap:16px">
     <h1>더보기</h1>
@@ -1152,16 +1153,14 @@ function viewMore() {
       <button class="card row" data-act="share" style="border:0;text-align:left;gap:14px;padding:14px">
         <span class="micon">${svg('share', 22, '#17806D')}</span>
         <span class="stack" style="flex:1;gap:2px"><b style="font-size:16px">함께하기 · 백업</b><span class="small muted">일정 공유, 백업 파일 내보내기·불러오기</span></span>${svg('chev', 18, '#5B6B6E')}</button>
-      <button class="card row" data-act="settings" style="border:0;text-align:left;gap:14px;padding:14px">
-        <span class="micon">${svg('edit', 22, '#17806D')}</span>
-        <span class="stack" style="flex:1;gap:2px"><b style="font-size:16px">여행 설정</b><span class="small muted">이름 · 날짜 · 동행자 · 예산 · 다른 여행</span></span>${svg('chev', 18, '#5B6B6E')}</button>
     </div>
   </div>`;
 }
 // 더보기 맨 위: 사진 대신 여행 상태 카드 (출발 전 = 카운트다운과 준비 현황, 여행 중 = 오늘, 다녀온 뒤 = 요약)
 function tripStatus(t, days, dl) {
   const ck = S.checklist, ckDone = ck.filter((x) => x.done).length, nx = nextItem();
-  const spent = settlement().total, budget = +t.budget || 0, today = todayStr();
+  const spent = settlement().total, today = todayStr();
+  const photos = S.journal.filter((j) => j.photo).length, todayPhotos = S.journal.filter((j) => j.photo && j.date === today).length;
   const during = dl <= 0 && today <= t.end, after = today > t.end;
   const man = (n) => { const a = Math.abs(n), v = a >= 1e6 ? Math.round(a / 1e4) + '만' : a >= 1e4 ? (a / 1e4).toFixed(1).replace(/\.0$/, '') + '만' : Math.round(a).toLocaleString('ko-KR'); return (n < 0 ? '-' : '') + v + '원'; };
   const todo = todosOf(today), todoDone = todo.filter((x) => x.done).length, noCode = S.tickets.filter((x) => !x.code).length;
@@ -1169,11 +1168,11 @@ function tripStatus(t, days, dl) {
   const big = after ? '다녀왔어요' : during ? `D${dayIndex(today)}` : dl === 0 ? 'D-DAY' : `D-${dl}`;
   const cap = after ? `${fmtDate(t.start)} — ${fmtDate(t.end)} · ${esc(t.name)}` : during ? `여행 ${days.length}일 중 ${dayIndex(today)}일째 · 오늘 일몰 ${fmtTime(sunTimes(today).set)}` : `${fmtDate(t.start)} 출발 · ${esc(t.name)}`;
   const tiles = after
-    ? [tile('journal', '여행 기록', S.journal.length + '개', ''), tile('money', '함께 쓴 돈', man(spent), ''), tile('todo', '해낸 일정', Object.values(S.todos).flat().filter((x) => x.done).length + '개', '')]
+    ? [tile('journal', '여행 사진', photos + '장', ''), tile('money', '함께 쓴 돈', man(spent), ''), tile('todo', '해낸 일정', Object.values(S.todos).flat().filter((x) => x.done).length + '개', '')]
     : [during ? tile('todo', '오늘 일정', todo.length ? `${todoDone}/${todo.length}` : '없음', todo.length ? (todoDone === todo.length ? '다 했어요' : `${todo.length - todoDone}개 남음`) : '자유 시간')
               : tile('check', '준비물', ck.length ? `${ckDone}/${ck.length}` : '시작', ck.length ? (ckDone === ck.length ? '다 챙겼어요' : `${ck.length - ckDone}개 남음`) : '체크리스트'),
        tile('tickets', '예약', S.tickets.length + '건', noCode ? `번호 빈칸 ${noCode}` : '번호 다 있음'),
-       tile('money', during ? '쓴 돈' : '예산', during ? man(spent) : budget ? man(budget - spent) : '설정', during && budget ? `${man(budget - spent)} 남음` : during ? '' : budget ? '남음' : '여행 설정에서')];
+       tile('journal', '여행 사진', photos + '장', during ? (todayPhotos ? `오늘 ${todayPhotos}장` : '오늘 사진 붙이기') : photos ? '모아 보기' : '사진 붙이기')];
   return `<div class="tstat">
     <div class="tsTop"><b class="num">${big}</b><span>${cap}</span></div>
     ${nx && !after ? `<button class="tsNext" data-act="openTicket" data-id="${nx.t.id}"><span>다음 예약</span><b>${fmtDate(nx.it.date)}${nx.it.time ? ' ' + esc(nx.it.time) : ''} · ${esc(itemLabel(nx.t, nx.it, tItems(nx.t).indexOf(nx.it)))}</b>${svg('chev', 16, '#17806D')}</button>` : ''}
@@ -1754,34 +1753,81 @@ function weatherBlock() {
 }
 
 /* ========= 여행 기록 ========= */
+// 여행 기록: 날짜별 코르크보드에 폴라로이드 사진과 포스트잇 메모를 붙여 둠
+const JNOTE = ['#FFF1A8', '#FFD6DE', '#CDEFE3', '#D9E6FF', '#FFE2C2'];
+const JTAPE = ['rgba(240,138,93,.55)', 'rgba(45,170,138,.45)', 'rgba(120,150,230,.45)', 'rgba(245,200,80,.6)', 'rgba(230,120,160,.45)'];
+const jhash = (id) => { let h = 7; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h); };
+function jCard(j) {
+  const h = jhash(j.id), rot = ((h % 9) - 4) * 0.85;
+  if (j.photo) {
+    const cap = j.title || j.place || '';
+    return `<button class="pola" data-act="openJournal" data-id="${j.id}" style="--r:${rot}deg">
+      <i class="tape" style="--tc:${JTAPE[h % JTAPE.length]};--tr:${((h >> 3) % 11) - 5}deg"></i>
+      <img data-img="${j.photo}" alt="${esc(cap || '여행 사진')}">
+      <span class="pcap">${esc(cap) || '&nbsp;'}</span></button>`;
+  }
+  return `<button class="post" data-act="openJournal" data-id="${j.id}" style="--r:${rot * 1.3}deg;--nc:${j.color || JNOTE[h % JNOTE.length]}">
+    <i class="pin"></i><b>${esc(j.title || '')}</b>${j.note ? `<span>${esc(j.note)}</span>` : ''}${j.place ? `<em>${svg('pin', 11, '#7A6A4A')} ${esc(j.place)}</em>` : ''}</button>`;
+}
 function viewJournal() {
-  const list = S.journal.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const days = tripDays(), all = S.journal.slice().sort((a, b) => ((a.date || '') + (a.at || 0) < (b.date || '') + (b.at || 0) ? -1 : 1));
+  const photos = all.filter((j) => j.photo).length, notes = all.length - photos;
+  const groups = days.map((d) => [`D${dayIndex(d)}`, fmtDate(d), all.filter((j) => j.date === d)]).filter((g) => g[2].length);
+  const other = all.filter((j) => !days.includes(j.date));
+  if (other.length) groups.push(['', '그 밖의 순간', other]);
   return `<div class="stack" style="gap:14px">
-    ${subHead('여행 기록', '사진 한 장, 짧은 한 줄로 여행을 기억해요.', addBtn('addJournal', '기록 남기기'))}
-    ${list.length ? list.map((j) => `<div class="card" style="padding:0;overflow:hidden">
-      ${j.photo ? `<img data-img="${j.photo}" alt="${esc(j.title)}" style="width:100%;max-height:260px;object-fit:cover;display:block">` : ''}
-      <div class="stack" style="gap:4px;padding:14px">
-        <div class="between"><b style="font-size:17px">${esc(j.title)}</b><span style="color:#F08A5D;letter-spacing:1px" aria-label="만족도 ${j.rating}점">${'★'.repeat(j.rating || 0)}<span style="color:#D3DAD5">${'★'.repeat(5 - (j.rating || 0))}</span></span></div>
-        <span class="small muted">${j.date ? fmtDate(j.date) : ''}${j.place ? ' · ' + esc(j.place) : ''}</span>
-        ${j.note ? `<p style="margin:6px 0 0;font-size:14px;line-height:1.6;white-space:pre-wrap">${esc(j.note)}</p>` : ''}
-        <div class="row" style="justify-content:flex-end;gap:0"><button class="icon" data-act="editJournal" data-id="${j.id}" aria-label="수정">${svg('edit', 17, '#5B6B6E')}</button><button class="icon" data-act="delJournal" data-id="${j.id}" aria-label="삭제">${svg('trash', 17, '#B3412A')}</button></div>
-      </div></div>`).join('') : '<div class="empty">오늘의 좋았던 순간을 남겨볼까요?</div>'}
+    ${subHead('여행 기록', all.length ? `사진 ${photos}장 · 메모 ${notes}개` : '사진은 폴라로이드로, 한 줄은 포스트잇으로')}
+    <div class="jacts">
+      <label class="btn jbtn">${svg('img', 18, '#fff')} 사진 붙이기<input type="file" id="jPick" accept="image/*" multiple hidden></label>
+      <button class="btn ghost jbtn" data-act="addJournal">${svg('edit', 17, '#17806D')} 메모 쓰기</button>
+    </div>
+    <div class="jboard">
+      ${groups.length ? groups.map(([dd, label, l]) => `<div class="jday"><span class="jtag">${dd ? `<b>${dd}</b>` : ''}${label}</span></div>
+        <div class="jgrid"><div class="jcol">${l.filter((_, i) => i % 2 === 0).map(jCard).join('')}</div><div class="jcol jcol2">${l.filter((_, i) => i % 2).map(jCard).join('')}</div></div>`).join('')
+      : `<div class="jempty"><div class="pola" style="--r:-4deg;pointer-events:none"><i class="tape" style="--tc:${JTAPE[0]};--tr:-3deg"></i><span class="jph">${svg('img', 34, '#B9A57A', 1.6)}</span><span class="pcap">첫 사진을 붙여 보세요</span></div>
+        <div class="post" style="--r:5deg;--nc:${JNOTE[0]};pointer-events:none"><i class="pin"></i><b>오늘 제일 좋았던 순간?</b><span>한 줄 메모도 붙일 수 있어요</span></div></div>`}
+    </div>
   </div>`;
 }
+function journalDetail(j) {
+  if (!j) return;
+  openSheet(`<div class="between" style="margin-bottom:8px"><span class="small muted">${j.date ? fmtDate(j.date) : ''}${j.place ? ' · ' + esc(j.place) : ''}</span>
+      <span class="row" style="gap:0"><button class="icon" data-act="editJournal" data-id="${j.id}" aria-label="수정">${svg('edit', 18, '#5B6B6E')}</button>
+      <button class="icon" data-act="delJournal" data-id="${j.id}" aria-label="삭제">${svg('trash', 18, '#B3412A')}</button></span></div>
+    ${j.photo ? `<div class="pola big"><img data-img="${j.photo}" alt=""><span class="pcap">${esc(j.title || '')}</span></div>`
+      : `<div class="post big" style="--nc:${j.color || JNOTE[jhash(j.id) % JNOTE.length]}"><i class="pin"></i><b>${esc(j.title || '')}</b></div>`}
+    ${j.note ? `<p class="jnote">${esc(j.note)}</p>` : ''}
+    ${!j.title && !j.note ? `<button class="tkempty" data-act="editJournal" data-id="${j.id}" style="margin-top:12px">한 줄 남기기</button>` : ''}`);
+  hydrateImages();
+}
 function journalForm(existing) {
-  const j = existing || { title:'', date: tripDays().includes(todayStr()) ? todayStr() : S.trip.start, place:'', rating:5, note:'' };
-  openSheet(`<h2 style="margin-bottom:14px">${existing ? '기록 수정' : '오늘의 순간 남기기'}</h2>
+  const j = existing || { title:'', date: tripDays().includes(todayStr()) ? todayStr() : S.trip.start, place:'', note:'' };
+  const isNote = !existing || !existing.photo, col = j.color || JNOTE[0];
+  openSheet(`<h2 style="margin-bottom:14px">${existing ? (existing.photo ? '사진 한 줄 남기기' : '메모 고치기') : '포스트잇 메모'}</h2>
     <form class="stack" style="gap:12px" data-form="journal" data-id="${existing ? existing.id : ''}">
-      <label class="field">한 줄 제목<input name="title" required value="${esc(j.title)}" placeholder="예: 인생 선셋 본 날"></label>
+      <label class="field">${isNote ? '메모' : '사진 아래 한 줄'}<input name="title" value="${esc(j.title || '')}" placeholder="${isNote ? '예: 망고 셰이크 최고' : '예: 인생 선셋'}" ${isNote && !existing ? 'required' : ''}></label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <label class="field">날짜<input type="date" name="date" value="${esc(j.date)}"></label>
-        <label class="field">만족도<select name="rating">${[5, 4, 3, 2, 1].map((n) => `<option value="${n}" ${n === +j.rating ? 'selected' : ''}>${'★'.repeat(n)} ${n}</option>`).join('')}</select></label>
+        <label class="field">날짜<input type="date" name="date" value="${esc(j.date || '')}"></label>
+        <label class="field">장소<input name="place" value="${esc(j.place || '')}" placeholder="예: Willy's Rock"></label>
       </div>
-      <label class="field">장소<input name="place" value="${esc(j.place)}" placeholder="예: Willy's Rock"></label>
-      <label class="field">이 순간의 이야기<textarea name="note">${esc(j.note)}</textarea></label>
-      <label class="field">사진 한 장<input type="file" name="photo" accept="image/*" style="padding-top:10px"></label>
-      <button class="btn" type="submit">저장하기</button>
+      <label class="field">더 남기고 싶은 이야기<textarea name="note" placeholder="(선택)">${esc(j.note || '')}</textarea></label>
+      ${isNote ? `<div class="stack" style="gap:6px"><span style="font-size:13px;color:var(--muted);font-weight:500">메모지 색</span><div class="jcolors">${JNOTE.map((c) => `<label><input type="radio" name="color" value="${c}" ${c === col ? 'checked' : ''}><span style="background:${c}"></span></label>`).join('')}</div></div>` : ''}
+      <label class="field">${existing && existing.photo ? '사진 바꾸기' : '사진 붙이기 (선택)'}<input type="file" name="photo" accept="image/*"></label>
+      <button class="btn" type="submit">붙이기</button>
     </form>`);
+}
+// 여러 장 한 번에 붙이기: 사진 찍은 날이 여행 날짜면 그날로, 아니면 오늘(여행 중) 또는 그 밖의 순간
+function addJournalPhotos(files) {
+  const days = tripDays(), today = todayStr(); let n = 0;
+  [...files].forEach((f, i) => {
+    if (!f.type.startsWith('image/')) return;
+    let d = '';
+    try { d = new Date(f.lastModified || Date.now()).toLocaleDateString('sv-SE', { timeZone: TZ }); } catch (e) {}
+    if (!days.includes(d)) d = days.includes(today) ? today : d || today;
+    const photo = uid(); putImg(photo, f);
+    S.journal.push({ id: uid(), title: '', date: d, place: '', note: '', photo, at: Date.now() + i }); n++;
+  });
+  if (n) { save(); render(); toast(`사진 ${n}장을 붙였어요`); }
 }
 
 /* ========= 새 기능 클릭 ========= */
@@ -1853,8 +1899,11 @@ document.addEventListener('click', (e) => {
     }
     case 'wxRefresh': fetchWeather(true); break;
     case 'addJournal': journalForm(null); break;
+    case 'openJournal': journalDetail(S.journal.find((x) => x.id === id)); break;
     case 'editJournal': journalForm(S.journal.find((x) => x.id === id)); break;
-    case 'delJournal': { const j = S.journal.find((x) => x.id === id); if (j && j.photo) delImg(j.photo); S.journal = S.journal.filter((x) => x.id !== id); rr(); toast('기록을 지웠어요'); break; }
+    case 'delJournal': { const j = S.journal.find((x) => x.id === id);
+      if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.innerHTML = '<span style="font-size:13px;font-weight:700;color:#B3412A;white-space:nowrap">한 번 더 누르면 떼기</span>'; b.style.width = 'auto'; break; }
+      if (j && j.photo) delImg(j.photo); S.journal = S.journal.filter((x) => x.id !== id); closeSheet(); rr(); toast('떼어냈어요'); break; }
   }
 });
 document.addEventListener('input', (e) => {
@@ -1873,6 +1922,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', (e) => {
   const inp = e.target;
   if (inp.dataset && inp.dataset.import && inp.files[0]) readImport(inp.files[0]);
+  if (inp.id === 'jPick' && inp.files.length) { addJournalPhotos(inp.files); inp.value = ''; }
   if (inp.dataset && inp.dataset.fx === 'cur') inp.dispatchEvent(new Event('input', { bubbles: true }));
 });
 
@@ -1928,13 +1978,14 @@ document.addEventListener('submit', async (e) => {
     S.ui.tab = 'money'; closeSheet(); save(); render(); toast('지출을 기록했어요');
   }
   if (kind === 'journal') {
-    const data = { title: str('title'), date: str('date'), place: str('place'), rating: +str('rating') || 5, note: String(fd.get('note') || '') };
-    const j = id ? S.journal.find((x) => x.id === id) : { id: uid() };
+    const data = { title: str('title'), date: str('date'), place: str('place'), note: String(fd.get('note') || '') };
+    if (fd.get('color')) data.color = String(fd.get('color'));
+    const j = id ? S.journal.find((x) => x.id === id) : { id: uid(), at: Date.now() };
     Object.assign(j, data);
     const f = form.querySelector('[name=photo]').files[0];
     if (f) { if (j.photo) delImg(j.photo); j.photo = uid(); putImg(j.photo, f); }
     if (!id) S.journal.push(j);
-    closeSheet(); save(); render(); toast('기록을 남겼어요');
+    closeSheet(); save(); render(); toast(id ? '고쳤어요' : '붙였어요');
   }
   if (kind === 'trip') {
     const s = str('start'), en = str('end');
