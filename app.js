@@ -122,6 +122,35 @@ function planTickets(start) {
     { id:uid(), cat:'hotel', title:'크림슨 리조트', date:D(2), time:'15:00', code:'', place:'Crimson Resort & Spa, Station Zero', url:'', memo:'체크인 12/18 15:00', imgs:[], files:[] }
   ];
 }
+// 12/15 받은 예약 내역(픽업·샌딩·투어)을 일정과 예약 탭에 반영. 이미 고친 항목은 건드리지 않고 없는 것만 추가
+function applyBookings(t) {
+  const D = (i) => addDays(t.trip.start, i);
+  const gidId = (gid) => (t.places.find((p) => p.gid === gid) || {}).id;
+  const addPlace = (pl) => { if (!t.places.some((p) => p.id === pl.id || p.gid === pl.gid)) t.places.push({ menu: [], memo: '', coordV: 2, gres: true, ...pl }); return gidId(pl.gid) || pl.id; };
+  const astoria = addPlace({ id: 'astoria', name: 'Astoria Boracay', cat: 'stay', area: 'Station 1 해변 · 호핑 미팅', gid: 'ChIJLXwWmhc8pTMR01_fX-02M9Y' });
+  const klo = addPlace({ id: 'klo', name: '칼리보 국제공항', cat: 'etc', area: '칼리보 (보라카이까지 차+배 약 2시간)', gid: 'ChIJiSeRGWudpTMRpfVW8G1UMVc' });
+  const muni = gidId('ChIJze8N62I9pTMR4PYCyzm04ZM') || addPlace({ id: 'munimuni', name: 'MUNIMUNI BORACAY', cat: 'food', area: 'Station 1', gid: 'ChIJze8N62I9pTMR4PYCyzm04ZM' });
+  const day = (i) => (t.todos[D(i)] = t.todos[D(i)] || []);
+  const has = (i, re) => day(i).some((x) => re.test(x.title));
+  if (!has(0, /픽업/)) day(0).unshift({ id: uid(), time: '', title: '공항 픽업 (TW125) → 헤난', placeId: klo, cat: 'move', note: '픽업 예약 완료 · TW125 도착 후 칼리보 공항에서 헤난 크리스탈 샌즈까지', done: false });
+  const ss = day(1).find((x) => x.title === '선셋 세일링' && !x.time);
+  if (ss) Object.assign(ss, { time: '15:00', title: '선셋 레드웨이브 미팅', placeId: muni, where: '', sunset: true, note: '예약 완료 · 화이트비치 무니무니 앞에서 15:00 미팅' });
+  else if (!has(1, /레드웨이브/)) day(1).push({ id: uid(), time: '15:00', title: '선셋 레드웨이브 미팅', placeId: muni, cat: 'sight', sunset: true, note: '예약 완료 · 화이트비치 무니무니 앞에서 15:00 미팅', done: false });
+  const hp = day(2).find((x) => x.title === '호핑투어 미팅 장소 도착');
+  if (hp) Object.assign(hp, { time: '08:00', title: '레드웨일 호핑투어 미팅', placeId: astoria, where: '', note: '예약 완료 · 화이트비치 스테이션1 아스토리아 리조트 앞 해변에서 08:00 미팅 · 12시까지' });
+  else if (!has(2, /레드웨일/)) day(2).push({ id: uid(), time: '08:00', title: '레드웨일 호핑투어 미팅', placeId: astoria, cat: 'move', note: '예약 완료 · 화이트비치 스테이션1 아스토리아 리조트 앞 해변에서 08:00 미팅 · 12시까지', done: false });
+  if (!has(4, /샌딩/)) day(4).push({ id: uid(), time: '09:10', title: '크림슨 출발 · 공항 샌딩 (TW126)', placeId: 'crimson', cat: 'move', note: '샌딩 예약 완료 · 09:10 크림슨 리조트 출발 → 칼리보 공항 · 체크아웃은 그 전에', done: false });
+  const tk = (title) => t.tickets.find((x) => x.title === title);
+  const upd = (old, data) => { const x = tk(old); if (x) Object.assign(x, data); else if (!tk(data.title)) t.tickets.push({ id: uid(), code: '', url: '', imgs: [], files: [], ...data }); };
+  upd('선셋 세일링', { cat: 'tour', title: '선셋 레드웨이브', date: D(1), time: '15:00', place: '화이트비치 무니무니(MUNIMUNI) 앞', memo: '예약 완료 · 15:00 미팅' });
+  upd('호핑투어', { cat: 'tour', title: '레드웨일 호핑투어', date: D(2), time: '08:00', place: '화이트비치 스테이션1 아스토리아 리조트 앞 해변', memo: '예약 완료 · 08:00 미팅 · 12:00 종료' });
+  const add = (data) => { if (!tk(data.title)) t.tickets.push({ id: uid(), code: '', url: '', imgs: [], files: [], ...data }); };
+  add({ cat: 'shuttle', title: '공항 픽업 (TW125)', date: D(0), time: '', place: '칼리보 공항 → 헤난 크리스탈 샌즈', memo: '예약 완료 · TW125 도착 후 픽업' });
+  add({ cat: 'shuttle', title: '공항 샌딩 (TW126)', date: D(4), time: '09:10', place: '크림슨 리조트 → 칼리보 공항', memo: '예약 완료 · 09:10 크림슨 리조트 출발' });
+  add({ cat: 'flight', title: 'TW125 인천 → 칼리보', date: D(0), time: '', place: '인천국제공항', memo: '출발·도착 시간과 예약번호를 넣어 주세요' });
+  add({ cat: 'flight', title: 'TW126 칼리보 → 인천', date: D(4), time: '', place: '칼리보 국제공항', memo: '출발 시간과 예약번호를 넣어 주세요' });
+  t.planV = 2;
+}
 function seed() {
   const start = '2026-12-16';
   const P = [
@@ -867,7 +896,7 @@ function ensureGid(p) {
 let favResolving = false;
 async function resolveFavs() {
   if (!GOOGLE_KEY || gAuthFail || favResolving || navigator.onLine === false) return;
-  const need = S.places.filter((p) => p.fav && p.gid && (!p.lat || !p.gAt || Date.now() - p.gAt > 25 * 864e5));
+  const need = S.places.filter((p) => p.gid && (p.fav || p.gres) && (!p.lat || !p.gAt || Date.now() - p.gAt > 25 * 864e5));
   if (!need.length) return;
   favResolving = true;
   try {
@@ -941,7 +970,8 @@ function ensureTrip(t) {
     t.tickets = t.tickets.filter((x) => !((x.title === '호핑투어' || x.title === '인천 → 칼리보') && !x.imgs.length && !(x.files || []).length)).concat(planTickets(st));
     t.ui.day = st; t.alarm.fired = {}; t.alarm.off = {};
   }
-  t.planV = 1;
+  t.planV = t.planV || 1;
+  if (t.planV < 2 && t.trip.start === '2026-12-16') applyBookings(t);
   t.ui.mapMode = 'mapbox'; // 기본(그림) 지도는 없애고 Mapbox만 씀
   if (t.ui.tab === 'home') t.ui.tab = 'map'; // 홈은 지도로 합쳐짐
   if (!t.favV) {
@@ -957,7 +987,7 @@ function ensureTrip(t) {
     t.places.forEach((p) => {
       const sg = seed['@' + p.id] || (p.id.startsWith('g') && FAV_SEED.find((x) => 'g' + x[0].slice(-10).replace(/[^A-Za-z0-9]/g, '') === p.id) || [])[0];
       if (sg) { if (p.gid !== sg) { p.gid = sg; delete p.gAt; } }
-      else if (p.gid) delete p.gid; // '다른 곳'으로 바꿨을 수 있는 연결은 지우고 이름으로 다시 찾음
+      else if (p.gid && !p.gres) delete p.gid; // '다른 곳'으로 바꿨을 수 있는 연결은 지우고 이름으로 다시 찾음 (예약 장소는 제외)
     });
     t.favV = 2;
   }
