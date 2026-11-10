@@ -192,3 +192,30 @@ nav.tabs button{height:56px;justify-content:center;gap:4px;padding:0}
 .hbar{width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.22);overflow:hidden;margin:6px 0 2px;display:block}
 .hbar i{display:block;height:100%;background:#F08A5D;border-radius:3px}
 .card .favdot,.favdot{width:30px;height:30px;border-radius:50%;background:#E5484D;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* 예약 */
+.tksec{display:flex;align-items:center;gap:7px;font-size:15px}
+.tksec .muted{font-size:13px}
+.tkadd{margin-left:auto;width:34px;height:34px;border:0;border-radius:10px;background:#E6F3EF;display:flex;align-items:center;justify-content:center}
+.tkcard{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left;border:0;background:#fff;border-radius:16px;padding:14px 15px;box-shadow:0 1px 0 rgba(16,38,43,.06)}
+.tkhead{display:flex;align-items:center;gap:8px}
+.tkhead b{font-size:16px;font-weight:700;flex:1;min-width:0}
+.tkcode{font-size:12px;color:#17806D;background:#E6F3EF;border-radius:6px;padding:2px 7px}
+.tkfile{display:flex;align-items:center;gap:2px;font-size:12px;color:#5B6B6E}
+.tkitems{display:flex;flex-direction:column;border-left:2px solid #DCE7E3;margin-left:3px;padding-left:11px;gap:5px}
+.tkit{display:flex;align-items:baseline;gap:10px;font-size:14px;position:relative}
+.tkit::before{content:'';position:absolute;left:-15px;top:6px;width:6px;height:6px;border-radius:50%;background:#B9CCC6}
+.tkit.next::before{background:#F08A5D}
+.tkit.past{opacity:.45}
+.tkwhen{font-size:12.5px;color:#5B6B6E;white-space:nowrap;min-width:92px}
+.tkwhat{flex:1;min-width:0}
+.tknext{font-size:11px;font-weight:700;color:#10262B;background:#F8C9B2;border-radius:5px;padding:1px 5px;white-space:nowrap}
+.tkempty{width:100%;border:1.5px dashed #C9D6D2;background:none;border-radius:14px;height:48px;color:#5B6B6E;font-size:14px}
+.tkline{display:flex;flex-direction:column;gap:0;margin-bottom:14px;border-left:2px solid #DCE7E3;margin-left:4px}
+.tkstep{display:flex;flex-direction:column;gap:3px;padding:0 0 14px 14px;position:relative}
+.tkstep::before{content:'';position:absolute;left:-6px;top:4px;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid #9DB8B0}
+.tkstep.next::before{border-color:#F08A5D;background:#F08A5D}
+.tkstep.past{opacity:.5}
+.tkstep b{font-size:16px}
+.tkstep a{display:inline-flex;align-items:center;gap:3px;color:#17806D;font-weight:500}
+.itrow{display:flex;flex-direction:column;gap:8px;background:#E8EFEC;border-radius:14px;padding:10px}
+.itrow input{height:44px;border:1px solid #DCE3E0;border-radius:10px;padding:0 10px;font-size:15px;background:#fff;width:100%;min-width:0}

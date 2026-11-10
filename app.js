@@ -91,8 +91,50 @@ function sunTimes(ds, lat = (S && S.trip.lat) || BORACAY.lat, lng = (S && S.trip
 /* ========= 저장소 ========= */
 const CATS = { food:'맛집', cafe:'카페', stay:'숙소', spot:'관광', shop:'쇼핑', beach:'해변', act:'액티비티', etc:'기타' };
 const CAT_ICON = { food:'food', cafe:'cafe', stay:'bed', beach:'wave', act:'boat', spot:'star', shop:'bag', etc:'pin' };
-const TCATS = { flight:'항공', hotel:'숙소', tour:'투어', shuttle:'교통', food:'식당', etc:'기타' };
-const TCAT_ICON = { flight:'plane', shuttle:'bus', tour:'boat', hotel:'bed', food:'food', etc:'ticket' };
+const TCATS = { flight:'항공권', hotel:'숙소', pack:'투어 · 액티비티', etc:'기타' };
+const TCAT_ICON = { flight:'plane', hotel:'bed', pack:'boat', etc:'ticket' };
+const TCAT_OLD = { tour:'pack', shuttle:'pack', food:'etc' };
+// 예약 하나에 세부 일정(items) 여러 개. 예전 데이터는 date/time/place 한 줄짜리라 그걸 일정 하나로 봄
+const tItems = (t) => (t.items && t.items.length ? t.items : [{ id: '_', date: t.date || '', time: t.time || '', title: '', place: t.place || '', note: '' }]);
+const itemKey = (it) => (it.date || '9999') + ' ' + (it.time || '99:99');
+const itemLabel = (t, it, i) => it.title || (t.cat === 'hotel' ? (i ? '체크아웃' : '체크인') : t.title);
+function syncTicket(t) {
+  if (!t.items || !t.items.length) return;
+  t.items.sort((a, b) => (itemKey(a) < itemKey(b) ? -1 : 1));
+  t.date = t.items[0].date; t.time = t.items[0].time; t.place = t.items[0].place || t.place || '';
+}
+// 같은 투어사·같은 항공사로 한 번에 예약한 것들을 예약 하나로 묶음 (planV 4)
+function groupTickets(t) {
+  const D = (i) => addDays(t.trip.start, i);
+  const toItem = (x, title, note) => ({ id: uid(), date: x.date || '', time: x.time || '', title, place: x.place || '', note: note == null ? (x.memo || '').replace(/^예약 완료 ?· ?/, '') : note });
+  const merge = (list, base, mk) => {
+    if (!list.length) return;
+    const g = { id: uid(), url: '', imgs: [], files: [], memo: '', ...base };
+    g.items = list.map(mk);
+    g.code = [...new Set(list.map((x) => x.code).filter(Boolean))].join(' / ');
+    g.url = (list.find((x) => x.url) || {}).url || '';
+    list.forEach((x) => { g.imgs.push(...(x.imgs || [])); g.files.push(...(x.files || [])); });
+    const at = t.tickets.indexOf(list[0]);
+    t.tickets = t.tickets.filter((x) => !list.includes(x));
+    t.tickets.splice(Math.max(0, at), 0, g); syncTicket(g);
+  };
+  t.tickets.forEach((x) => { if (TCAT_OLD[x.cat]) x.cat = TCAT_OLD[x.cat]; });
+  const flights = t.tickets.filter((x) => x.cat === 'flight' && !x.items && /TW12[56]/.test(x.title));
+  merge(flights, { cat: 'flight', title: '티웨이항공 왕복', company: '티웨이항공' }, (x) => {
+    const out = /TW125/.test(x.title);
+    const memo = /예약번호를 넣어|출발·도착 시간과|출발 시간과/.test(x.memo || '') ? '' : (x.memo || '');
+    return { ...toItem(x, x.title, memo || (out ? '12:55 칼리보 도착 (현지 시간) · 약 4시간 35분' : '19:05 인천 도착 (한국 시간)')), time: x.time || (out ? '09:20' : '13:55') };
+  });
+  const tour = t.tickets.filter((x) => !x.items && /^(선셋 레드웨이브|레드웨일 호핑투어|공항 픽업 \(TW125\)|공항 샌딩 \(TW126\))$/.test(x.title));
+  merge(tour, { cat: 'pack', title: '투어사 패키지', company: '', memo: '픽업 · 선셋 레드웨이브 · 레드웨일 호핑 · 샌딩을 한 투어사에서 함께 예약' }, (x) => toItem(x, x.title.replace(/ \(TW12[56]\)$/, '')));
+  // 숙소: 체크인·체크아웃을 일정 두 줄로
+  const hotel = (re, out) => { const h = t.tickets.find((x) => x.cat === 'hotel' && !x.items && re.test(x.title)); if (h) { h.items = [{ id: uid(), date: h.date, time: h.time || '15:00', title: '체크인', place: h.place || '', note: '' }, { id: uid(), ...out, title: '체크아웃', place: h.place || '', note: '' }]; if (/^체크인 .*체크아웃 [0-9:/ ]+$/.test(h.memo || '')) h.memo = ''; syncTicket(h); } };
+  if (t.trip.start === '2026-12-16') {
+    hotel(/헤난/, { date: D(2), time: '07:30' });
+    hotel(/크림슨/, { date: D(4), time: '' });
+  }
+  t.planV = 4;
+}
 
 // 여자친구 구글맵 '보라카이' 저장 목록 (Google place ID만 저장, 위치는 앱에서 Google에 물어봐서 채움)
 const FAV_SEED = [["ChIJJdfnlrU9pTMR6_4oqmdDiJU", "Chubby Crab Ph Boracay", "food"], ["ChIJv5vT9mU9pTMRsfVbsbP7gQs", "Cafe Uno Boracay", "food"], ["ChIJDeBfqWQ9pTMRNf9yA0WUpAU", "Gerry's Grill Station 1 (Mito's Place)", "food"], ["ChIJR3yY8xc8pTMRMrKf3UMZ5r0", "The Pig Out Bistro", "food"], ["ChIJyTkDfCI8pTMRQjaytrhnZls", "Money Changer By Queen's", "shop"], ["ChIJ34Ba0Do_pTMR9XHY0I0URtk", "Bistro des Amis", "food"], ["ChIJ-0qso2I8pTMRNIrXs5qrXy4", "Puka Shell Beach", "beach", "puka"], ["ChIJzQb2NBk9pTMRZ27M2o7Govc", "Robinsons Supermarket (Station B Mall)", "shop"], ["ChIJ2ZYowHw9pTMRf_vCEbNCJzc", "The Sunny Side Cafe", "food"], ["ChIJjeyYtyI8pTMRLxBfFIr4bhE", "버짓 마트", "shop"], ["ChIJHV-0-xc8pTMRIGyS0ogx4sA", "Jonah's Fruit Shake & Snack Bar", "cafe", "jonahs"], ["ChIJfZfCZBg8pTMRM8DBzaz2cL4", "Aria Restaurant", "food"], ["ChIJ9SjTsJk_pTMRggd7sWCAoDE", "TGH The Grillhouse Sportsbar", "food"], ["ChIJHVGzVyM8pTMRVGnfxDgGW5E", "레반틴 보라카이", "stay"], ["ChIJEZp3Yzs8pTMRRk39gb5nhyo", "Bulabog Beach", "beach", "bulabog"], ["ChIJHae4G7g9pTMR-fEMTDzw9yM", "I Love Boracay", "spot"], ["ChIJQ4r3_iI8pTMRgFuocXT1w7A", "금강산 보라카이 (한식)", "food"], ["ChIJze8N62I9pTMR4PYCyzm04ZM", "MUNIMUNI BORACAY", "food"], ["ChIJiWR5DAA9pTMR6ZCebiEpLoA", "Chimney Cake Boracay", "cafe"], ["ChIJb3NcfBKdpTMRf5D4rr5fSgA", "cafeone 칼리보 공항 라운지", "cafe"], ["ChIJfQdkayY8pTMR-ykXO5nIPNE", "Club Galaxy", "spot"], ["ChIJlSHGFRg8pTMR_zZ1tMWcLR4", "Summer Place", "food"], ["ChIJwT46r2w9pTMRlVUR2UV-nsY", "JumboCrab", "food"], ["ChIJ_____zw8pTMRGYZAoNDu6Js", "I Luv Backyard BBQ", "food"], ["ChIJgf0DyOc9pTMR2uMXVBMtVt4", "IslandVault (카드·커피)", "shop"], ["ChIJ28YXmxc8pTMRFRIwdq71h3I", "스타벅스 (Boat Station 1)", "cafe"], ["ChIJqUS69SI8pTMRhSfWHsSECs4", "Coco Mama", "cafe"], ["ChIJi-btmyI8pTMR7ePGOYolp-Y", "Island Chicken Inasal", "food"], ["ChIJ0XFGhp89pTMRs_LmuQKrU40", "Redcrab Boracay", "food"], ["ChIJRZVYKD08pTMRd8uuySUcFnY", "Hello Spa & Hello Foot Spa", "act"], ["ChIJCyipUpM9pTMR4PDO0QXc8MY", "졸리비 (Beachfront)", "food"], ["ChIJlRhKuSI8pTMRO4T9oRxbfWU", "HaloMango (D'Mall)", "cafe"], ["ChIJq1AnIxg8pTMR7D0HcFU4EFw", "Gerry's Grill Station 2", "food"], ["ChIJ37BoRE89pTMRDuHn5lI67EI", "Cheeze Moon Pink Moon", "cafe"], ["ChIJUdbVevA9pTMRhhu-JhDyILE", "인생네컷 (D'Mall 2층)", "shop"], ["ChIJb5hQmyI8pTMRZtpq1nlR3ns", "Epic Boracay", "food"], ["ChIJN55cXXE8pTMRkPMfXW6s4J0", "Crimson Resort & Spa", "stay", "crimson"], ["ChIJufKSmyI8pTMRgjGViTPXTh0", "Henann Crystal Sands Resort", "stay", "henann"], ["ChIJ869ObRg8pTMRpzlcCpuT278", "사바비 레스토랑", "food"], ["ChIJIy8j3SM8pTMRF4cTD9InnQA", "차스파 (마사지)", "act"], ["ChIJjX844Dw8pTMRp7Z0wedotN8", "Aqua Boracay", "stay"]];
@@ -236,7 +278,7 @@ function dayTabs(act, sel) {
 }
 
 /* ========= 탭 ========= */
-const TABS = [['map','지도','map'], ['todo','일정','list'], ['money','경비','coin'], ['more','더보기','grid']];
+const TABS = [['map','지도','map'], ['todo','일정','list'], ['tickets','예약','ticket'], ['more','더보기','grid']];
 function renderTabs() {
   $('#tabs').innerHTML = TABS.map(([id, label, ic]) =>
     `<button data-act="tab" data-tab="${id}" ${S.ui.tab === id || (id === 'more' && SUBTABS.includes(S.ui.tab)) ? 'aria-current="page"' : ''}>${svg(ic, 24)}${label}</button>`).join('');
@@ -281,10 +323,10 @@ function tripJourney(days, before, dleft) {
   const cap = before ? `D-${dleft}` : cur >= n ? '끝' : `D${cur + 1}`;
   return `<button class="jcap" data-act="diagTap" style="border:0">${cap}</button><div class="jrow">${parts}</div>`;
 }
-function nextTicket() {
+function nextItem() {
   const t = todayStr();
-  return S.tickets.filter((x) => x.date >= t).sort((a, b) => (a.date + a.time) < (b.date + b.time) ? -1 : 1)[0]
-      || S.tickets.slice().sort((a, b) => (a.date + a.time) < (b.date + b.time) ? -1 : 1)[0];
+  return S.tickets.flatMap((x) => tItems(x).map((it) => ({ t: x, it }))).filter((o) => o.it.date && o.it.date >= t)
+    .sort((a, b) => (itemKey(a.it) < itemKey(b.it) ? -1 : 1))[0] || null;
 }
 
 /* ========= 일정 ========= */
@@ -1004,7 +1046,7 @@ function ensureTrip(t) {
   t.todos = t.todos || {}; t.places = t.places || []; t.tickets = t.tickets || [];
   t.checklist = t.checklist || []; t.expenses = t.expenses || []; t.journal = t.journal || [];
   t.ui = Object.assign({ tab:'map', day:t.trip.start, placeFilter:'all', ticketFilter:'all', checkFilter:'all', placeList:'all' }, t.ui || {});
-  t.tickets.forEach((x) => { x.imgs = x.imgs || []; x.files = x.files || []; });
+  t.tickets.forEach((x) => { x.imgs = x.imgs || []; x.files = x.files || []; if (TCAT_OLD[x.cat]) x.cat = TCAT_OLD[x.cat]; if (!TCATS[x.cat]) x.cat = 'etc'; });
   t.places.forEach((p) => { if (PLACE_FIX[p.id] && !p.coordV) { p.lng = PLACE_FIX[p.id][0]; p.lat = PLACE_FIX[p.id][1]; } p.coordV = 2; });
   if (!t.planV && t.trip.start === '2026-11-13') {
     // 예시 일정 → 실제 확정 일정(12/16~20)으로 교체. 체크리스트·경비·기록·직접 넣은 장소는 그대로 둠
@@ -1018,6 +1060,7 @@ function ensureTrip(t) {
   t.planV = t.planV || 1;
   if (t.planV < 2 && t.trip.start === '2026-12-16') applyBookings(t);
   if (t.planV < 3 && t.trip.start === '2026-12-16') applyFlightTimes(t);
+  if (t.planV < 4) groupTickets(t);
   t.ui.mapMode = 'mapbox'; // 기본(그림) 지도는 없애고 Mapbox만 씀
   if (t.ui.tab === 'home') t.ui.tab = 'map'; // 홈은 지도로 합쳐짐
   if (!t.favV) {
@@ -1084,7 +1127,7 @@ function gRoute(points) {
   return `https://www.google.com/maps/dir/?api=1&origin=${enc(points[0])}&destination=${enc(points[points.length - 1])}${mid ? '&waypoints=' + mid : ''}&travelmode=walking`;
 }
 const todoPoint = (it) => { const p = placeById(it.placeId); return p && p.lat ? { lat: p.lat, lng: p.lng } : (p ? { q: p.name + ' ' + (S.trip.city || '') } : (it.where ? { q: it.where + ' ' + (S.trip.city || '') } : null)); };
-const SUBTABS = ['places', 'check', 'tickets', 'sunset', 'journal'];
+const SUBTABS = ['places', 'check', 'money', 'sunset', 'journal'];
 const subHead = (title, desc, action) => `<div class="stack" style="gap:6px">
   <button class="row muted" data-act="tab" data-tab="more" style="border:0;background:none;padding:0;gap:2px;font-size:14px;font-weight:500;min-height:32px">${svg('back', 18)}더보기</button>
   <div class="between" style="align-items:flex-start"><div class="stack" style="gap:4px"><h1>${title}</h1>${desc ? `<span class="muted" style="font-size:13px">${desc}</span>` : ''}</div>${action || ''}</div></div>`;
@@ -1097,7 +1140,7 @@ function viewMore() {
   const menu = [
     ['places', '장소 · 맛집', 'food', `${S.places.length}곳 · 꼭 가기 ${S.places.filter((p) => p.priority === 'must').length}`],
     ['check', '체크리스트', 'checksq', ck.length ? `준비 ${ckDone} / ${ck.length}` : '기본 준비물로 시작'],
-    ['tickets', '예약 보관함', 'ticket', `${S.tickets.length}개의 예약`],
+    ['money', '경비 · 정산', 'coin', S.expenses.length ? `${S.expenses.length}건 · ${won(settlement().total)}` : '페소로 적으면 원화로 바꿔줘요'],
     ['sunset', '날씨 · 일몰', 'sun', `일몰 ${fmtTime(sunTimes(currentDay()).set)} · 선셋 알람`],
     ['journal', '여행 기록', 'book', `${S.journal.length}개의 순간`]
   ];
@@ -1186,7 +1229,7 @@ function itineraryText() {
     l.forEach((it) => { const p = placeById(it.placeId); lines.push(`- ${it.time || '--:--'} ${it.title}${p ? ` (${p.name})` : it.where ? ` (${it.where})` : ''}`); });
     lines.push('');
   });
-  if (S.tickets.length) { lines.push('예약'); S.tickets.forEach((x) => lines.push(`- ${fmtDate(x.date)} ${x.time || ''} ${TCATS[x.cat] || ''} ${x.title}${x.code ? ' #' + x.code : ''}`)); }
+  if (S.tickets.length) { lines.push('예약'); S.tickets.forEach((x) => { lines.push(`- [${TCATS[x.cat] || '예약'}] ${x.title}${x.code ? ' #' + x.code : ''}`); tItems(x).forEach((it, i) => lines.push(`  · ${it.date ? fmtDate(it.date) : ''} ${it.time || ''} ${itemLabel(x, it, i)}`)); }); }
   return lines.join('\n');
 }
 function shareSheet() {
@@ -1429,66 +1472,80 @@ function addPlaceForm(lngLat) { placeForm(null, lngLat); }
 
 /* ========= 예약 보관함 ========= */
 function viewTickets() {
-  const f = S.ui.ticketFilter;
-  const list = S.tickets.filter((t) => f === 'all' || t.cat === f).sort((a, b) => (a.date + a.time) < (b.date + b.time) ? -1 : 1);
-  const next = nextTicket();
-  return `<div class="stack" style="gap:14px">
-    ${subHead('예약 보관함', '항공권, 숙소, 투어의 예약 정보와 파일을 한곳에.', addBtn('addTicket', '예약 추가'))}
-    <div class="chips">
-      <button class="chip ${f === 'all' ? 'on' : ''}" data-act="tfilter" data-f="all">전체 ${S.tickets.length}</button>
-      ${Object.entries(TCATS).map(([k, v]) => `<button class="chip ${f === k ? 'on' : ''}" data-act="tfilter" data-f="${k}">${v}</button>`).join('')}
-    </div>
-    ${next && f === 'all' ? `<button class="gcard stack" data-act="openTicket" data-id="${next.id}" style="text-align:left;gap:8px">
-      <span class="between"><span class="tag" style="background:#F08A5D;color:#10262B">다음 예약</span><span style="font-size:13px;color:#CDEDE5">${TCATS[next.cat] || ''}</span></span>
-      <span style="font-size:24px;font-weight:700;color:#fff"><span class="num">${esc(next.time || '')}</span> ${esc(next.title)}</span>
-      <span style="font-size:13px;color:#D3F0E8">${fmtDate(next.date)}${next.code ? ' · 예약번호 ' + esc(next.code) : ''} · 파일 ${next.imgs.length + next.files.length}개</span>
-      ${next.imgs.length ? `<span class="thumbs">${next.imgs.slice(0, 4).map((id) => `<img data-img="${id}" alt="예약 캡처">`).join('')}</span>` : ''}
-    </button>` : ''}
-    <div class="stack">
-      ${list.length ? list.map((t) => `<button class="card row" data-act="openTicket" data-id="${t.id}" style="border:0;text-align:left;gap:12px">
-        <span class="micon">${svg(TCAT_ICON[t.cat] || 'ticket', 22, '#17806D')}</span>
-        <span class="stack" style="flex:1;gap:2px;min-width:0"><b style="font-size:15px;font-weight:500">${esc(t.title)}</b><span class="small muted">${fmtDate(t.date)} ${esc(t.time)}${t.code ? ' · #' + esc(t.code) : ''}</span></span>
-        <span class="small muted" style="background:#EAEFEB;border-radius:6px;padding:3px 7px;white-space:nowrap">${t.imgs.length + t.files.length ? '파일 ' + (t.imgs.length + t.files.length) : t.memo ? '메모' : '비어 있음'}</span>
-      </button>`).join('') : '<div class="empty">아직 담아둔 예약이 없어요.<br>확정된 예약부터 하나씩 추가해 보세요.</div>'}
-    </div>
+  const nx = nextItem(), today = todayStr();
+  const cats = Object.keys(TCATS).filter((k) => k !== 'etc' || S.tickets.some((x) => x.cat === 'etc'));
+  const card = (t) => {
+    const its = tItems(t), files = t.imgs.length + t.files.length;
+    return `<button class="tkcard" data-act="openTicket" data-id="${t.id}">
+      <span class="tkhead"><b>${esc(t.title)}</b>${t.code ? `<span class="tkcode num">${esc(t.code)}</span>` : ''}${files ? `<span class="tkfile">${svg('file', 13, '#5B6B6E')}${files}</span>` : ''}</span>
+      ${t.company && !t.title.includes(t.company) ? `<span class="small muted">${esc(t.company)}</span>` : ''}
+      <span class="tkitems">${its.map((it, i) => {
+        const isNext = nx && nx.it === it, past = it.date && it.date < today;
+        return `<span class="tkit ${past ? 'past' : ''} ${isNext ? 'next' : ''}"><span class="tkwhen num">${it.date ? fmtDate(it.date) : '날짜 미정'}${it.time ? ' ' + esc(it.time) : ''}</span><span class="tkwhat">${esc(itemLabel(t, it, i))}</span>${isNext ? '<span class="tknext">다음</span>' : ''}</span>`;
+      }).join('')}</span>
+    </button>`;
+  };
+  const sorted = (k) => S.tickets.filter((x) => x.cat === k).sort((a, b) => (itemKey(tItems(a)[0]) < itemKey(tItems(b)[0]) ? -1 : 1));
+  return `<div class="stack" style="gap:18px">
+    <div class="between"><h1>예약</h1>${addBtn('addTicket', '예약 추가')}</div>
+    ${cats.map((k) => { const l = sorted(k); return `<section class="stack" style="gap:8px">
+      <div class="tksec">${svg(TCAT_ICON[k], 18, '#17806D')}<b>${TCATS[k]}</b><span class="muted">${l.length}</span><button class="tkadd" data-act="addTicket" data-cat="${k}" aria-label="${TCATS[k]} 추가">${svg('plus', 16, '#17806D', 2.4)}</button></div>
+      ${l.length ? l.map(card).join('') : `<button class="tkempty" data-act="addTicket" data-cat="${k}">${k === 'flight' ? '항공권' : k === 'hotel' ? '숙소' : '예약'} 추가하기</button>`}
+    </section>`; }).join('')}
   </div>`;
 }
-function ticketForm(existing) {
-  const t = existing || { cat:'flight', title:'', date: currentDay(), time:'', memo:'', code:'', place:'', url:'' };
+const itemRow = (it) => `<div class="itrow">
+    <div class="between" style="gap:8px"><input name="i_title" value="${esc(it.title || '')}" placeholder="무엇 (예: 선셋 투어, 체크인)" aria-label="세부 일정 이름" style="flex:1">
+      <button type="button" class="icon" data-act="delItemRow" aria-label="이 일정 빼기" style="width:36px;height:36px">${svg('close', 16, '#B3412A')}</button></div>
+    <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:8px"><input type="date" name="i_date" value="${esc(it.date || '')}" aria-label="날짜"><input type="time" name="i_time" value="${esc(it.time || '')}" aria-label="시간"></div>
+    <input name="i_place" value="${esc(it.place || '')}" placeholder="장소 · 미팅 위치" aria-label="장소">
+    <input name="i_note" value="${esc(it.note || '')}" placeholder="메모 (선택)" aria-label="메모">
+    <input type="hidden" name="i_id" value="${esc(it.id && it.id !== '_' ? it.id : '')}">
+  </div>`;
+function ticketForm(existing, cat) {
+  const t = existing || { cat: cat || 'pack', title:'', memo:'', code:'', company:'', url:'' };
+  const its = existing ? tItems(existing) : [{ date: currentDay(), time: '', title: '', place: '', note: '' }];
   openSheet(`
     <h2 style="margin-bottom:14px">${existing ? '예약 수정' : '새로운 예약'}</h2>
     <form class="stack" style="gap:12px" data-form="ticket" data-id="${existing ? existing.id : ''}">
-      <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:10px">
-        <label class="field">예약 종류<select name="cat">${Object.entries(TCATS).map(([k, v]) => `<option value="${k}" ${k === t.cat ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:10px">
+        <label class="field">분류<select name="cat">${Object.entries(TCATS).map(([k, v]) => `<option value="${k}" ${k === t.cat ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
         <label class="field">예약번호<input name="code" value="${esc(t.code || '')}" placeholder="예: ABC123"></label>
       </div>
-      <label class="field">예약 이름<input name="title" required value="${esc(t.title)}" placeholder="예: 호핑투어, 인천 → 칼리보"></label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <label class="field">이용일<input type="date" name="date" value="${esc(t.date)}"></label>
-        <label class="field">시간<input type="time" name="time" value="${esc(t.time)}"></label>
+      <label class="field">예약 이름<input name="title" required value="${esc(t.title)}" placeholder="예: 투어사 패키지, 티웨이 왕복"></label>
+      <label class="field">업체 · 연락처<input name="company" value="${esc(t.company || '')}" placeholder="투어사·항공사 이름, 카톡 아이디 등"></label>
+      <div class="stack" style="gap:8px"><span style="font-size:13px;color:var(--muted);font-weight:500">세부 일정 <span style="font-weight:400">· 픽업, 투어, 체크인처럼 날짜별로</span></span>
+        <div class="stack" id="itRows" style="gap:8px">${its.map(itemRow).join('')}</div>
+        <button type="button" class="btn ghost" data-act="addItemRow" style="height:42px">${svg('plus', 16, '#17806D', 2.4)} 일정 한 줄 더</button>
       </div>
-      <label class="field">주소 / 출발·도착 정보<input name="place" value="${esc(t.place || '')}" placeholder="예: 숙소 앞 픽업"></label>
       <label class="field">예약 페이지 (https://)<input type="url" name="url" value="${esc(t.url || '')}"></label>
       <label class="field">예약 파일 · 캡처 이미지, PDF, 메일(.eml/.txt)<input type="file" name="files" multiple accept="image/*,application/pdf,.pdf,.eml,.txt" style="padding-top:10px"></label>
-      <label class="field">메모 · 메일 내용 붙여넣기<textarea name="memo" placeholder="픽업 장소, 포함 사항 등">${esc(t.memo)}</textarea></label>
+      <label class="field">메모 · 메일 내용 붙여넣기<textarea name="memo" placeholder="포함 사항, 결제 금액, 연락처 등">${esc(t.memo || '')}</textarea></label>
       <button class="btn" type="submit">${existing ? '저장하기' : '추가하기'}</button>
     </form>`);
 }
 function ticketDetail(t) {
+  if (!t) return;
+  const nx = nextItem(), today = todayStr();
   openSheet(`
     <div class="between" style="margin-bottom:10px"><span class="tag">${TCATS[t.cat] || '예약'}</span>
       <span class="row" style="gap:0"><button class="icon" data-act="editTicket" data-id="${t.id}" aria-label="수정">${svg('edit', 18, '#5B6B6E')}</button>
       <button class="icon" data-act="delTicket" data-id="${t.id}" aria-label="삭제">${svg('trash', 18, '#B3412A')}</button></span></div>
     <h2 style="font-size:22px">${esc(t.title)}</h2>
-    <p class="muted" style="margin:4px 0 12px">${fmtDate(t.date)} ${esc(t.time)}</p>
-    <div class="card stack" style="gap:6px;margin-bottom:12px">
-      ${t.code ? `<span class="between"><span class="muted">예약번호</span><b class="num" style="font-size:17px">${esc(t.code)}</b></span>` : ''}
-      ${t.place ? `<span class="between" style="gap:12px"><span class="muted" style="flex-shrink:0">장소</span><a href="${gSearch({ q: t.place + ' ' + (S.trip.city || '') })}" target="_blank" rel="noopener" style="text-align:right">${esc(t.place)} ↗</a></span>` : ''}
+    ${t.company ? `<p class="muted" style="margin:4px 0 0">${esc(t.company)}</p>` : ''}
+    <div class="card stack" style="gap:6px;margin:12px 0">
+      <span class="between"><span class="muted">예약번호</span>${t.code ? `<b class="num" style="font-size:17px">${esc(t.code)}</b>` : '<button class="small" data-act="editTicket" data-id="' + t.id + '" style="border:0;background:none;color:#17806D;font-weight:700;padding:0">넣기 ＋</button>'}</span>
       ${t.url ? `<a href="${esc(t.url)}" target="_blank" rel="noopener" style="font-weight:700">예약 페이지 열기 ↗</a>` : ''}
-      ${!t.code && !t.place && !t.url ? '<span class="small muted">예약번호·장소를 수정에서 넣을 수 있어요</span>' : ''}
     </div>
+    <div class="tkline">${tItems(t).map((it, i) => `<div class="tkstep ${it.date && it.date < today ? 'past' : ''} ${nx && nx.it === it ? 'next' : ''}">
+      <span class="tkwhen num">${it.date ? fmtDate(it.date) : '날짜 미정'}${it.time ? ' · ' + esc(it.time) : ''}${nx && nx.it === it ? ' <span class="tknext">다음</span>' : ''}</span>
+      <b>${esc(itemLabel(t, it, i))}</b>
+      ${it.place ? `<a href="${gSearch({ q: it.place + ' ' + (S.trip.city || '') })}" target="_blank" rel="noopener" class="small">${svg('pin', 13, '#17806D')} ${esc(it.place)} ↗</a>` : ''}
+      ${it.note ? `<span class="small muted">${esc(it.note)}</span>` : ''}
+    </div>`).join('')}</div>
     <div class="full">${t.imgs.map((id) => `<img data-img="${id}" alt="예약 캡처">`).join('')}</div>
     ${t.files.map((f) => `<button class="card row" data-act="openFile" data-id="${f.id}" style="border:0;width:100%;margin-bottom:8px;text-align:left">${svg('file', 20, '#17806D')}<span style="flex:1">${esc(f.name)}</span><span class="small muted">열기</span></button>`).join('')}
+    ${!t.imgs.length && !t.files.length ? '<button class="tkempty" data-act="editTicket" data-id="' + t.id + '" style="margin-bottom:10px">바우처 캡처 · PDF 넣기</button>' : ''}
     ${t.memo ? `<pre class="memo">${esc(t.memo)}</pre>` : ''}`);
   hydrateImages();
 }
@@ -1546,7 +1603,7 @@ function viewMoney() {
   const cur = S.ui.fxCur || 'PHP', rate = krwPer(cur);
   const byCat = Object.entries(EXP_CATS).map(([k, v]) => [v, S.expenses.filter((e) => e.cat === k).reduce((s, e) => s + (+e.amount || 0), 0)]).filter(([, n]) => n > 0);
   return `<div class="stack" style="gap:16px">
-    <div class="between"><h1>경비 · 정산</h1>${addBtn('addExpense', '지출 추가')}</div>
+    ${subHead('경비 · 정산', '', addBtn('addExpense', '지출 추가'))}
     <div class="gcard stack" style="gap:6px">
       <span style="font-size:13px;color:#CDEDE5">사용한 금액</span>
       <b class="num" style="font-size:34px;color:#fff;line-height:1.1">${won(st.total)}</b>
@@ -1826,7 +1883,11 @@ document.addEventListener('submit', async (e) => {
   }
   if (kind === 'ticket') {
     const t = id ? S.tickets.find((x) => x.id === id) : { id: uid(), imgs: [], files: [] };
-    Object.assign(t, { cat: str('cat'), title: str('title'), date: str('date'), time: str('time'), memo: String(fd.get('memo') || ''), code: str('code'), place: str('place'), url: str('url') });
+    const col = (k) => fd.getAll(k).map((v) => String(v).trim());
+    const ti = col('i_title'), td = col('i_date'), tt = col('i_time'), tp = col('i_place'), tn = col('i_note'), tid = col('i_id');
+    const items = ti.map((title, i) => ({ id: tid[i] || uid(), title, date: td[i], time: tt[i], place: tp[i], note: tn[i] })).filter((it) => it.title || it.date || it.time || it.place || it.note);
+    Object.assign(t, { cat: str('cat'), title: str('title'), memo: String(fd.get('memo') || ''), code: str('code'), company: str('company'), url: str('url'), items });
+    if (!items.length) Object.assign(t, { items: [], date: '', time: '', place: '' }); else syncTicket(t);
     for (const file of form.querySelector('[name=files]').files) {
       if (file.type.startsWith('image/')) { const imgId = uid(); putImg(imgId, file); t.imgs.push(imgId); }
       else if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) { const fid = uid(); putImg(fid, file); t.files.push({ id: fid, name: file.name }); }
@@ -2040,8 +2101,9 @@ document.addEventListener('click', (e) => {
       const link = document.createElement('a'); link.href = url; link.download = 'boracay-sunset.ics'; document.body.appendChild(link); link.click(); link.remove();
       toast('파일을 열어 캘린더에 추가하세요'); break;
     }
-    case 'tfilter': S.ui.ticketFilter = b.dataset.f; rerender(); break;
-    case 'addTicket': ticketForm(null); break;
+    case 'addTicket': ticketForm(null, b.dataset.cat); break;
+    case 'addItemRow': { const box = $('#itRows'); if (!box) break; const last = box.lastElementChild; const d = last ? last.querySelector('[name=i_date]').value : currentDay(); box.insertAdjacentHTML('beforeend', itemRow({ date: d })); box.lastElementChild.querySelector('[name=i_title]').focus(); break; }
+    case 'delItemRow': { const r = b.closest('.itrow'); if (r) r.remove(); break; }
     case 'openTicket': ticketDetail(S.tickets.find((t) => t.id === id)); break;
     case 'editTicket': ticketForm(S.tickets.find((t) => t.id === id)); break;
     case 'delTicket': { const t = S.tickets.find((x) => x.id === id); t.imgs.forEach(delImg); S.tickets = S.tickets.filter((x) => x.id !== id); closeSheet(); rerender(); toast('티켓을 지웠어요'); break; }
