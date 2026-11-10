@@ -465,7 +465,7 @@ function centerOn(p) {
 let sheetUp = false, sheetVis = 0;
 function renderMapTop() {
   const days = tripDays(), before = todayStr() < S.trip.start, dleft = Math.round((dateObj(S.trip.start) - dateObj(todayStr())) / 864e5);
-  $('#mapTop').innerHTML = `<div class="hhead hjour">${tripJourney(days, before, dleft)}<button class="icon" data-act="tab" data-tab="sunset" aria-label="선셋 알람" style="width:36px;height:36px;flex-shrink:0">${svg('bell', 20, '#1C2B2E')}</button></div>`;
+  $('#mapTop').innerHTML = `<div class="hhead hjour">${tripJourney(days, before, dleft)}<button class="icon" data-act="tab" data-tab="sunset" aria-label="날씨 · 일몰" style="width:36px;height:36px;flex-shrink:0">${svg('sun', 21, '#E0703F', 2)}</button></div>`;
 }
 function buildMapHeader() {
   $('#msheet').innerHTML = `
@@ -1083,17 +1083,7 @@ function viewMore() {
   ];
   return `<div class="stack" style="gap:16px">
     <h1>더보기</h1>
-    <div class="tripcard">
-      <div class="tripcover">${t.cover ? `<img data-img="${t.cover}" alt="">` : svg('img', 30, '#17806D', 1.6)}</div>
-      <div class="stack" style="gap:4px;padding:14px 16px">
-        <div class="between"><b style="font-size:19px">${esc(t.name)}</b><span class="tag" style="background:#E6F3EF;color:#17806D">${dl > 0 ? `D-${dl}` : dl === 0 ? 'D-DAY' : todayStr() <= t.end ? '여행 중' : '다녀옴'}</span></div>
-        <span class="muted" style="font-size:13px">${fmtDate(t.start)} — ${fmtDate(t.end)} · ${days.length}일 · ${esc(members().join(', '))}</span>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-          <button class="btn ghost" data-act="trips" style="height:42px">여행 바꾸기 · 추가</button>
-          <button class="btn ghost" data-act="settings" style="height:42px">여행 설정</button>
-        </div>
-      </div>
-    </div>
+    ${tripStatus(t, days, dl)}
     <div class="stack" style="gap:8px">${menu.map(([tab, label, ic, sub]) => `
       <button class="card row" data-act="tab" data-tab="${tab}" style="border:0;text-align:left;gap:14px;padding:14px">
         <span class="micon">${svg(ic, 22, '#17806D')}</span>
@@ -1101,7 +1091,32 @@ function viewMore() {
       <button class="card row" data-act="share" style="border:0;text-align:left;gap:14px;padding:14px">
         <span class="micon">${svg('share', 22, '#17806D')}</span>
         <span class="stack" style="flex:1;gap:2px"><b style="font-size:16px">함께하기 · 백업</b><span class="small muted">일정 공유, 백업 파일 내보내기·불러오기</span></span>${svg('chev', 18, '#5B6B6E')}</button>
+      <button class="card row" data-act="settings" style="border:0;text-align:left;gap:14px;padding:14px">
+        <span class="micon">${svg('edit', 22, '#17806D')}</span>
+        <span class="stack" style="flex:1;gap:2px"><b style="font-size:16px">여행 설정</b><span class="small muted">이름 · 날짜 · 동행자 · 예산 · 다른 여행</span></span>${svg('chev', 18, '#5B6B6E')}</button>
     </div>
+  </div>`;
+}
+// 더보기 맨 위: 사진 대신 여행 상태 카드 (출발 전 = 카운트다운과 준비 현황, 여행 중 = 오늘, 다녀온 뒤 = 요약)
+function tripStatus(t, days, dl) {
+  const ck = S.checklist, ckDone = ck.filter((x) => x.done).length, nx = nextItem();
+  const spent = settlement().total, budget = +t.budget || 0, today = todayStr();
+  const during = dl <= 0 && today <= t.end, after = today > t.end;
+  const man = (n) => { const a = Math.abs(n), v = a >= 1e6 ? Math.round(a / 1e4) + '만' : a >= 1e4 ? (a / 1e4).toFixed(1).replace(/\.0$/, '') + '만' : Math.round(a).toLocaleString('ko-KR'); return (n < 0 ? '-' : '') + v + '원'; };
+  const todo = todosOf(today), todoDone = todo.filter((x) => x.done).length, noCode = S.tickets.filter((x) => !x.code).length;
+  const tile = (tab, label, val, sub) => `<button class="tsTile" data-act="tab" data-tab="${tab}"><span>${label}</span><b class="num">${val}</b>${sub ? `<i>${sub}</i>` : ''}</button>`;
+  const big = after ? '다녀왔어요' : during ? `D${dayIndex(today)}` : dl === 0 ? 'D-DAY' : `D-${dl}`;
+  const cap = after ? `${fmtDate(t.start)} — ${fmtDate(t.end)} · ${esc(t.name)}` : during ? `여행 ${days.length}일 중 ${dayIndex(today)}일째 · 오늘 일몰 ${fmtTime(sunTimes(today).set)}` : `${fmtDate(t.start)} 출발 · ${esc(t.name)}`;
+  const tiles = after
+    ? [tile('journal', '여행 기록', S.journal.length + '개', ''), tile('money', '함께 쓴 돈', man(spent), ''), tile('todo', '해낸 일정', Object.values(S.todos).flat().filter((x) => x.done).length + '개', '')]
+    : [during ? tile('todo', '오늘 일정', todo.length ? `${todoDone}/${todo.length}` : '없음', todo.length ? (todoDone === todo.length ? '다 했어요' : `${todo.length - todoDone}개 남음`) : '자유 시간')
+              : tile('check', '준비물', ck.length ? `${ckDone}/${ck.length}` : '시작', ck.length ? (ckDone === ck.length ? '다 챙겼어요' : `${ck.length - ckDone}개 남음`) : '체크리스트'),
+       tile('tickets', '예약', S.tickets.length + '건', noCode ? `번호 빈칸 ${noCode}` : '번호 다 있음'),
+       tile('money', during ? '쓴 돈' : '예산', during ? man(spent) : budget ? man(budget - spent) : '설정', during && budget ? `${man(budget - spent)} 남음` : during ? '' : budget ? '남음' : '여행 설정에서')];
+  return `<div class="tstat">
+    <div class="tsTop"><b class="num">${big}</b><span>${cap}</span></div>
+    ${nx && !after ? `<button class="tsNext" data-act="openTicket" data-id="${nx.t.id}"><span>다음 예약</span><b>${fmtDate(nx.it.date)}${nx.it.time ? ' ' + esc(nx.it.time) : ''} · ${esc(itemLabel(nx.t, nx.it, tItems(nx.t).indexOf(nx.it)))}</b>${svg('chev', 16, '#fff')}</button>` : ''}
+    <div class="tsTiles">${tiles.join('')}</div>
   </div>`;
 }
 function tripsSheet() {
@@ -1126,9 +1141,9 @@ function tripForm(isNew) {
       </div>
       <label class="field">동행자 · 쉼표로 구분<input name="members" value="${esc((t.members || []).join(', '))}" placeholder="예: 지훈, 다영"></label>
       <label class="field">전체 예산 (원)<input type="number" name="budget" inputmode="numeric" value="${esc(t.budget)}" placeholder="예: 1500000"></label>
-      <label class="field">대표 사진<input type="file" name="cover" accept="image/*" style="padding-top:10px"></label>
       <button class="btn" type="submit">${isNew ? '만들기' : '저장'}</button>
-      ${isNew ? '' : `<button class="btn ghost" type="button" data-act="mbTheme">Mapbox 색: ${S.ui.mbTheme === 'original' ? '내가 꾸민 원래 색' : '앱 지도 스타일'} (바꾸기)</button>
+      ${isNew ? '' : `<button class="btn ghost" type="button" data-act="trips">다른 여행 보기 · 추가</button>
+      <button class="btn ghost" type="button" data-act="mbTheme">Mapbox 색: ${S.ui.mbTheme === 'original' ? '내가 꾸민 원래 색' : '앱 지도 스타일'} (바꾸기)</button>
       ${Object.keys(DB.trips).length > 1 ? `<button class="btn danger" type="button" data-act="delTrip">이 여행 삭제</button>` : `<button class="btn danger" type="button" data-act="reset">처음 상태로 초기화</button>`}`}
     </form>`);
 }
@@ -1854,7 +1869,7 @@ document.addEventListener('submit', async (e) => {
     if (form.dataset.new) {
       t = ensureTrip({ trip: data, ui: { tab: 'map', day: s } }); DB.trips[t.id] = t;
     } else { t = S; cityChanged = t.trip.city !== data.city; Object.assign(t.trip, data); t.alarm.fired = {}; if (cityChanged) delete DB.weather[t.id]; }
-    const cv = form.querySelector('[name=cover]').files[0];
+    const cvIn = form.querySelector('[name=cover]'), cv = cvIn && cvIn.files[0];
     if (cv) { if (t.trip.cover) delImg(t.trip.cover); t.trip.cover = uid(); putImg(t.trip.cover, cv); }
     save();
     if (data.city && (form.dataset.new || cityChanged)) geocodeCity(t);
