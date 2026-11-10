@@ -79,8 +79,6 @@ h2{margin:0;font-size:17px}
 .wxrow{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
 .wxday{flex:0 0 76px;border:1.5px solid #EEF0EC;border-radius:14px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
 .wxday.trip{border-color:#2DAA8A;background:#F2FAF7}
-.thumbs{display:flex;gap:6px;flex-wrap:wrap}
-.thumbs img{width:64px;height:84px;object-fit:cover;border-radius:10px;background:#eee}
 .full img{width:100%;border-radius:12px;margin-bottom:8px}
 .empty{padding:28px 0;text-align:center;color:var(--muted);font-size:14px}
 pre.memo{white-space:pre-wrap;word-break:break-word;font-family:inherit;font-size:13px;margin:0;background:#fff;border-radius:12px;padding:12px}
@@ -191,7 +189,6 @@ nav.tabs button{height:56px;justify-content:center;gap:4px;padding:0}
 .mrow-r{font-size:12px;color:#5B6B6E;flex-shrink:0}/* 진행 막대 (체크리스트·경비) */
 .hbar{width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.22);overflow:hidden;margin:6px 0 2px;display:block}
 .hbar i{display:block;height:100%;background:#F08A5D;border-radius:3px}
-.card .favdot,.favdot{width:30px;height:30px;border-radius:50%;background:#E5484D;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 /* 예약 */
 .tksec{display:flex;align-items:center;gap:7px;font-size:15px}
 .tksec .muted{font-size:13px}

@@ -27,9 +27,7 @@ const I = {
   wave:'<path d="M2 12c2-2 4-2 6 0s4 2 6 0 4-2 6 0M2 17c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/>',
   star:'<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
   close:'<path d="M6 6l12 12M18 6 6 18"/>',
-  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   img:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
-  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
   plane:'<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
   bus:'<rect x="4" y="4" width="16" height="13" rx="3"/><path d="M4 11h16M8 21l-1-4M16 21l1-4"/>',
   boat:'<path d="M3 17l2 4h14l2-4H3zM12 3v11M12 4l6 8h-6"/>',
@@ -229,7 +227,7 @@ function seed() {
     todos: planTodos(start),
     places: P,
     tickets: planTickets(start),
-    ui: { tab:'map', day:start, placeFilter:'all', ticketFilter:'all' }
+    ui: { tab:'map', day:start, placeFilter:'all' }
   };
 }
 /* 이미지(티켓 캡처)는 IndexedDB에 보관, 안 되면 메모리에 */
@@ -432,12 +430,10 @@ function makeICS() {
 /* ========= 지도: 직접 그린 보라카이 지도 (기본) + Mapbox (선택) ========= */
 const GEO = { minLng: 121.900, maxLng: 121.955, minLat: 11.934, maxLat: 12.004 };
 const G = '#17806D', GL = '#2DAA8A';
-const PALM = '<path d="M0 0 Q2.5 -9 0.5 -19" stroke="#A47447" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M0.5 -19 q-8 -5 -14 1 q7 -2 14 -1z M0.5 -19 q8 -5 14 1 q-7 -2 -14 -1z M0.5 -19 q-3 -8 -10 -10 q5 3 10 10z M0.5 -19 q3 -8 10 -10 q-5 3 -10 10z M0.5 -19 q0 -7 -2 -11 q3 4 2 11z" fill="#3DAE68"/>';
-const UMB = '<path d="M0 0 V-11" stroke="#8A6A48" stroke-width="1.5"/><path d="M-9 -10 Q0 -20 9 -10 Z" fill="#2BB0C6"/><path d="M-3 -10 Q0 -19 3 -10 Z" fill="#F7D774"/>';
 let userPos = null, geoWatch = null, mapHeaderBuilt = false;
 function headerH() { const t = $('#mapTop'); return t ? t.offsetTop + t.offsetHeight : 110; }
 function bottomH() { return (sheetVis || 200) + 16; }
-const routeStops = () => sortTodos(todosOf(S.ui.day).slice()).map((t) => placeById(t.placeId)).filter((p) => p && p.lat);
+const dayPlaces = () => sortTodos(todosOf(S.ui.day).slice()).map((t) => placeById(t.placeId)).filter((p) => p && p.lat);
 const insideBoracay = (p) => p.lat > GEO.minLat && p.lat < GEO.maxLat && p.lng > GEO.minLng && p.lng < GEO.maxLng;
 function locate(silent) {
   if (!navigator.geolocation) { silent || toast('이 기기에서는 위치를 쓸 수 없어요'); return; }
@@ -465,8 +461,6 @@ function centerOn(p) {
 }
 
 /* ----- 지도 탭 화면 (헤더 · 범례 · 장소 카드) ----- */
-const MAP_CATS = [['food', '맛집', 'food'], ['cafe', '카페', 'cafe'], ['beach', '해변', 'wave']];
-const favCount = () => S.places.filter((p) => p.fav).length;
 /* ===== 첫 화면(지도): 위 여정 헤더 + 아래 끌어올리는 시트(검색·카드·목록) ===== */
 let sheetUp = false, sheetVis = 0;
 function renderMapTop() {
@@ -486,13 +480,14 @@ function buildMapHeader() {
   inp.addEventListener('focus', () => { if (!sheetUp) setSheet(true); });
   mapHeaderBuilt = true;
 }
+const favCount = () => S.places.filter((p) => p.fav).length;
 const STABS = [['today', '오늘 일정', 'list'], ['fav', '즐겨찾기', 'heart'], ['food', '맛집', 'food'], ['cafe', '카페', 'cafe'], ['beach', '해변', 'wave']];
 function renderMapCats() {
   const t = S.ui.sheetTab || 'today';
   $('#mapCats').innerHTML = STABS.map(([k, label, ic]) => `<button class="mchip ${t === k ? 'on' : ''}${k === 'fav' ? ' fav' : ''}" data-act="stab" data-t="${k}" aria-pressed="${t === k}">${svg(ic, 15, t === k ? '#fff' : (k === 'fav' ? '#E5484D' : G), 2.3)}${label}${k === 'fav' ? ` <span class="cnt">${favCount()}</span>` : ''}</button>`).join('');
   renderSheetList();
 }
-function renderMapLegend() {
+function renderFavFab() {
   const fb = $('#favFab'); if (!fb) return;
   const on = S.ui.placeFilter === 'fav';
   fb.classList.toggle('on', on); fb.setAttribute('aria-pressed', on);
@@ -608,7 +603,7 @@ function renderMapCardInner() {
   if (POI) { card.innerHTML = poiCard(); const slot = $('#poiGSlot'); if (slot && POI.gel) slot.appendChild(POI.gel); return; }
   const p = placeById(S.ui.selPlace);
   if (!p) { card.innerHTML = nextCardHtml(); return; }
-  const inPlan = routeStops().some((x) => x.id === p.id);
+  const inPlan = dayPlaces().some((x) => x.id === p.id);
   if (GOOGLE_KEY && !gAuthFail && p.lat) {
     const g = placeG(p);
     card.innerHTML = `<div class="mcard" style="flex-direction:column;align-items:stretch;gap:8px">
@@ -641,11 +636,11 @@ function renderMapCardInner() {
   hydrateImages();
 }
 
-let map = null, mapState = 'idle', markers = [], numMarkers = [];
+let map = null, mapState = 'idle', markers = [];
 function renderMap() {
   S.ui.day = tripDays().includes(S.ui.day) ? S.ui.day : currentDay();
   if (!mapHeaderBuilt) buildMapHeader();
-  renderMapTop(); renderMapCats(); renderMapLegend(); renderMapCard();
+  renderMapTop(); renderMapCats(); renderFavFab(); renderMapCard();
   $('#mapbox').style.display = 'block';
   if (NAV && sheetUp) setSheet(false);
   showMapFail(mapState === 'failed');
@@ -701,12 +696,10 @@ function initMap() {
       map.addLayer(Object.assign({ id: 'app-beach', type: 'fill', source: 'beach', paint: { 'fill-color': '#F4E3B4', 'fill-opacity': 0.95 } }, bslot), firstSymbol);
       map.addLayer(Object.assign({ id: 'app-beach-edge', type: 'line', source: 'beach', layout: { 'line-join': 'round' }, paint: { 'line-color': '#F4E3B4', 'line-width': ['interpolate', ['linear'], ['zoom'], 13, 3, 16, 6, 18, 10] } }, bslot), firstSymbol);
     }
-    ['track', 'route', 'nav'].forEach((id) => map.addSource(id, { type: 'geojson', data: empty }));
+    ['track', 'nav'].forEach((id) => map.addSource(id, { type: 'geojson', data: empty }));
     map.addLayer({ id: 'track', type: 'line', source: 'track', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': G, 'line-width': 4, 'line-dasharray': [0.1, 2] } });
-    map.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': GL, 'line-width': 4.5 } });
     map.addLayer({ id: 'nav-case', type: 'line', source: 'nav', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#fff', 'line-width': 9 } });
     map.addLayer({ id: 'nav', type: 'line', source: 'nav', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1A73E8', 'line-width': 5 } });
-    addDecorMarkers();
     setupFavLayer();
     setupPoiTap();
     hideFerries(map);
@@ -715,7 +708,7 @@ function initMap() {
     runMapQueue();
   });
   map.on('click', (e) => { if (Date.now() - poiTapAt < 450 || e.originalEvent.target.closest('[data-mb]')) return; if (POI) closePoi(); if (S.ui.selPlace) { S.ui.selPlace = null; save(); refreshMap(); } });
-  // 길게 누르면 장소 추가 (그림 지도와 같은 동작)
+  // 길게 누르면 그 자리에 장소 추가
   let lp = null;
   map.on('touchstart', (e) => { if (e.originalEvent.touches.length !== 1) return; const ll = e.lngLat; lp = setTimeout(() => addPlaceForm(ll), 550); });
   ['touchend', 'touchmove', 'dragstart', 'zoomstart'].forEach((ev) => map.on(ev, () => clearTimeout(lp)));
@@ -725,43 +718,12 @@ function initMap() {
   setTimeout(() => { if (!loaded && map && mapState === 'loading') { mapState = 'slow'; if (S.ui.tab === 'map') toast('지도를 불러오는 중이에요. 인터넷이 느린 것 같아요'); } }, 8000);
   setTimeout(() => { if (!loaded && map) { try { map.remove(); } catch (er) {} map = null; mapboxFailed(); } }, 25000);
 }
-// Mapbox 지도의 색을 앱 그림 지도처럼 바꿔 칠하기
+// Mapbox Standard 지도의 색을 앱 색(민트 바다·베이지 땅)으로 맞춤. 설정에서 '내가 꾸민 원래 색'을 고르면 건너뜀
 function applyAppTheme(m = map) {
-  if ((m.getStyle().imports || []).length) {
-    const cfg = { lightPreset:'day', colorWater:'#BFE6EA', colorLand:'#F3F1EA', colorGreenspace:'#E4F0DF', colorRoads:'#FFFFFF', colorTrunks:'#FFFFFF', colorMotorways:'#FFFFFF', colorBuildings:'#EAE5D8', colorCommercial:'#EFEADF', colorIndustrial:'#EFEADF', colorEducation:'#EFEADF', colorMedical:'#EFEADF', colorPlaceLabels:'#3E5457', colorRoadLabels:'#6B7779', colorPointOfInterestLabels:'#5B6B6E', densityPointOfInterestLabels:4, showPointOfInterestLabels:true, show3dObjects:false, show3dBuildings:false, show3dTrees:false, show3dLandmarks:false, show3dFacades:false };
-    (m.getStyle().imports || []).forEach((im) => Object.entries(cfg).forEach(([k, v]) => { try { m.setConfigProperty(im.id, k, v); } catch (e) {} }));
-    return;
-  }
-  const set = (id, prop, val) => { try { m.setPaintProperty(id, prop, val); } catch (e) {} };
-  m.getStyle().layers.forEach((l) => {
-    const id = l.id.toLowerCase();
-    if (l.type === 'background') set(l.id, 'background-color', '#F3F1EA');
-    else if (l.type === 'fill') {
-      if (/water|ocean|sea/.test(id)) set(l.id, 'fill-color', '#BFE6EA');
-      else if (/sand|beach/.test(id)) set(l.id, 'fill-color', '#F4E3B4');
-      else if (/park|grass|wood|forest|green|scrub|national|golf|pitch/.test(id)) set(l.id, 'fill-color', '#E4F0DF');
-      else if (/building/.test(id)) set(l.id, 'fill-color', '#EAE5D8');
-      else if (/land|urban|residential|commercial|industrial|hillshade/.test(id)) set(l.id, 'fill-color', '#F3F1EA');
-    } else if (l.type === 'fill-extrusion' && /building/.test(id)) set(l.id, 'fill-extrusion-color', '#EAE5D8');
-    else if (l.type === 'line') {
-      if (/water|river|stream|canal/.test(id)) set(l.id, 'line-color', '#A9DCE2');
-      else if (/road|street|path|bridge|tunnel|track|pedestrian|steps|service|motorway|trunk|primary|secondary|tertiary/.test(id)) {
-        set(l.id, 'line-color', /case|casing|outline/.test(id) ? '#E6E1D3' : '#FFFFFF');
-      } else if (/admin|boundary/.test(id)) set(l.id, 'line-opacity', 0.3);
-    } else if (l.type === 'symbol') {
-      set(l.id, 'text-color', /water|ocean|sea|marine/.test(id) ? '#3E7E8A' : '#3E5457');
-      set(l.id, 'text-halo-color', 'rgba(243,241,234,0.9)');
-      if (/poi/.test(id)) set(l.id, 'icon-opacity', 0.55);
-    }
-  });
+  const cfg = { lightPreset:'day', colorWater:'#BFE6EA', colorLand:'#F3F1EA', colorGreenspace:'#E4F0DF', colorRoads:'#FFFFFF', colorTrunks:'#FFFFFF', colorMotorways:'#FFFFFF', colorBuildings:'#EAE5D8', colorCommercial:'#EFEADF', colorIndustrial:'#EFEADF', colorEducation:'#EFEADF', colorMedical:'#EFEADF', colorPlaceLabels:'#3E5457', colorRoadLabels:'#6B7779', colorPointOfInterestLabels:'#5B6B6E', densityPointOfInterestLabels:4, showPointOfInterestLabels:true, show3dObjects:false, show3dBuildings:false, show3dTrees:false, show3dLandmarks:false, show3dFacades:false };
+  (m.getStyle().imports || []).forEach((im) => Object.entries(cfg).forEach(([k, v]) => { try { m.setConfigProperty(im.id, k, v); } catch (e) {} }));
 }
-let decorMarkers = [], meMarker = null;
-function addDecorMarkers() {
-  decorMarkers.forEach((m) => m.remove()); decorMarkers = [];
-  const mk = (html, ll, anchor) => { const el = document.createElement('div'); el.style.pointerEvents = 'none'; el.innerHTML = html; decorMarkers.push(new mapboxgl.Marker({ element: el, anchor: anchor || 'bottom' }).setLngLat(ll).addTo(map)); };
-  PALMS.forEach((ll) => mk(`<svg width="30" height="26" viewBox="-15 -23 30 26" aria-hidden="true">${PALM}</svg>`, ll));
-  UMBS.forEach((ll) => mk(`<svg width="20" height="22" viewBox="-10 -21 20 22" aria-hidden="true">${UMB}</svg>`, ll));
-}
+let meMarker = null;
 function mbPin(p, n, on) {
   const el = document.createElement('button'); el.dataset.mb = '1'; el.setAttribute('aria-label', (n ? n + '번 ' : '') + p.name);
   el.style.cssText = 'border:0;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center';
@@ -782,25 +744,22 @@ function refreshMeMarker() {
   } else meMarker.setLngLat([userPos.lng, userPos.lat]);
 }
 function refreshMap() {
-  if (S.ui.tab === 'map') { renderMapCard(); renderMapLegend(); }
+  if (S.ui.tab === 'map') { renderMapCard(); renderFavFab(); }
   if (mapState !== 'ready') return;
-  markers.forEach((m) => m.remove()); numMarkers.forEach((m) => m.remove()); markers = []; numMarkers = [];
-  const f = S.ui.placeFilter, stops = [], ids = stops.map((p) => p.id);
-  // 지도에는 그날 일정(번호 핀)만 크게 표시. 다른 저장 장소는 맛집·카페 버튼을 눌렀을 때나 고른 장소만 보여 줌
-  const shown = S.places.filter((p) => p.lat && !ids.includes(p.id) && ((f === 'fav' ? p.fav : f !== 'all' ? p.cat === f : false) || p.id === S.ui.selPlace));
+  markers.forEach((m) => m.remove()); markers = [];
+  const f = S.ui.placeFilter;
+  // 평소엔 깨끗한 지도. 즐겨찾기·맛집·카페 등 분류를 골랐을 때와 고른 장소만 핀으로 보여 줌 (즐겨찾기는 하트 레이어)
+  const shown = S.places.filter((p) => p.lat && ((f === 'fav' ? p.fav : f !== 'all' ? p.cat === f : false) || p.id === S.ui.selPlace));
   shown.filter((p) => !p.fav).forEach((p) => markers.push(mbPin(p, 0, p.id === S.ui.selPlace)));
   setFavLayer(shown.filter((p) => p.fav));
-  stops.forEach((p, i) => numMarkers.push(mbPin(p, i + 1, p.id === S.ui.selPlace)));
   const track = (S.track && S.track[S.ui.day]) || [];
   map.getSource('track').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: track.length > 1 ? track : [] } });
-  map.getSource('route').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: NAV ? [] : stops.map((p) => [p.lng, p.lat]) } });
   map.getSource('nav').setData(NAV ? { type: 'Feature', geometry: { type: 'LineString', coordinates: NAV.geo } } : { type: 'FeatureCollection', features: [] });
   refreshMeMarker();
 }
 
 /* ========= 지도 위 가게 누르기 → Google 장소 정보 ========= */
 let POI = null, poiMarker = null, poiTapAt = 0, gReady = null, gAuthFail = false;
-const POI_GTYPE = { food: ['restaurant'], cafe: ['cafe'], stay: ['lodging'], shop: ['store'] };
 const POI_QUERY = { food: 'restaurant', cafe: 'cafe', stay: 'hotel', shop: 'shop', spot: 'tourist attraction', etc: 'place' };
 function poiCat(cls, maki) {
   if (cls === 'food_and_drink') return /cafe|coffee|bakery|ice-cream/.test(maki || '') ? 'cafe' : 'food';
@@ -1003,20 +962,6 @@ function fitFiltered() {
   if (pts.length < 2) return;
   whenMapReady(() => { const xs = pts.map((c) => c[0]), ys = pts.map((c) => c[1]); map.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: { top: headerH() + 30, bottom: bottomH() + 40, left: 40, right: 40 }, maxZoom: 16 }); });
 }
-function favSheet() {
-  const favs = S.places.filter((p) => p.fav);
-  const order = ['food', 'cafe', 'shop', 'act', 'beach', 'spot', 'stay', 'etc'];
-  const groups = order.map((c) => [c, favs.filter((p) => (CATS[p.cat] ? p.cat : 'etc') === c)]).filter(([, l]) => l.length);
-  const me = userPos && insideBoracay(userPos) ? userPos : null;
-  openSheet(`<div class="between"><h2 style="font-size:20px">${svg('heart', 18, '#E5484D')} 즐겨찾기 <span class="muted" style="font-size:14px;font-weight:500">${favs.length}곳</span></h2></div>
-    <p class="small muted" style="margin:4px 0 12px">누르면 지도에서 보여 줘요</p>
-    ${favs.length ? groups.map(([c, l]) => `<h3 class="small muted" style="margin:12px 0 6px;font-weight:700">${CATS[c] || '기타'} · ${l.length}</h3>
-      <div class="stack" style="gap:6px">${l.map((p) => `<button class="card row" data-act="favGo" data-id="${p.id}" style="border:0;text-align:left;gap:10px;min-height:52px">
-        <span class="favdot">${svg(CAT_ICON[p.cat] || 'pin', 16, '#fff', 2.2)}</span>
-        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700">${esc(p.name)}</span>
-        <span class="small muted">${me && p.lat ? fmtDist(Math.hypot((p.lng - me.lng) * 108900, (p.lat - me.lat) * 110600)) : (p.lat ? '' : '위치 확인 중')}</span></button>`).join('')}</div>`).join('')
-      : '<div class="empty">아직 즐겨찾기가 없어요. 장소 카드의 ♥를 눌러 보세요</div>'}`);
-}
 function toggleFav(p) { p.fav = !p.fav; save(); toast(p.fav ? '즐겨찾기에 넣었어요' : '즐겨찾기에서 뺐어요'); if (p.fav && !p.lat) resolveFavs(); }
 function poiAdd() {
   const p = POI; if (!p) return;
@@ -1045,7 +990,8 @@ function ensureTrip(t) {
   t.alarm = t.alarm || { offset:30, off:{}, fired:{} };
   t.todos = t.todos || {}; t.places = t.places || []; t.tickets = t.tickets || [];
   t.checklist = t.checklist || []; t.expenses = t.expenses || []; t.journal = t.journal || [];
-  t.ui = Object.assign({ tab:'map', day:t.trip.start, placeFilter:'all', ticketFilter:'all', checkFilter:'all', placeList:'all' }, t.ui || {});
+  t.ui = Object.assign({ tab:'map', day:t.trip.start, placeFilter:'all', checkFilter:'all', placeList:'all' }, t.ui || {});
+  delete t.ui.mapMode; delete t.ui.ticketFilter; // 더 안 쓰는 옛 설정
   t.tickets.forEach((x) => { x.imgs = x.imgs || []; x.files = x.files || []; if (TCAT_OLD[x.cat]) x.cat = TCAT_OLD[x.cat]; if (!TCATS[x.cat]) x.cat = 'etc'; });
   t.places.forEach((p) => { if (PLACE_FIX[p.id] && !p.coordV) { p.lng = PLACE_FIX[p.id][0]; p.lat = PLACE_FIX[p.id][1]; } p.coordV = 2; });
   if (!t.planV && t.trip.start === '2026-11-13') {
@@ -1061,7 +1007,6 @@ function ensureTrip(t) {
   if (t.planV < 2 && t.trip.start === '2026-12-16') applyBookings(t);
   if (t.planV < 3 && t.trip.start === '2026-12-16') applyFlightTimes(t);
   if (t.planV < 4) groupTickets(t);
-  t.ui.mapMode = 'mapbox'; // 기본(그림) 지도는 없애고 Mapbox만 씀
   if (t.ui.tab === 'home') t.ui.tab = 'map'; // 홈은 지도로 합쳐짐
   if (!t.favV) {
     FAV_SEED.forEach(([gid, name, cat, mine]) => {
@@ -1119,14 +1064,6 @@ const members = () => (S.trip.members && S.trip.members.length ? S.trip.members 
 const won = (n) => '₩ ' + Math.round(n || 0).toLocaleString('ko-KR');
 const krwPer = (cur) => cur === 'KRW' ? 1 : (DB.fx.rates[cur] || (cur === 'PHP' ? 24 : null));
 const gSearch = (p) => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.lat ? `${p.lat},${p.lng}` : p.q);
-function gRoute(points) {
-  const enc = (p) => encodeURIComponent(p.lat ? `${p.lat},${p.lng}` : p.q);
-  if (!points.length) return null;
-  if (points.length === 1) return gSearch(points[0]);
-  const mid = points.slice(1, -1).map(enc).join('%7C');
-  return `https://www.google.com/maps/dir/?api=1&origin=${enc(points[0])}&destination=${enc(points[points.length - 1])}${mid ? '&waypoints=' + mid : ''}&travelmode=walking`;
-}
-const todoPoint = (it) => { const p = placeById(it.placeId); return p && p.lat ? { lat: p.lat, lng: p.lng } : (p ? { q: p.name + ' ' + (S.trip.city || '') } : (it.where ? { q: it.where + ' ' + (S.trip.city || '') } : null)); };
 const SUBTABS = ['places', 'check', 'money', 'sunset', 'journal'];
 const subHead = (title, desc, action) => `<div class="stack" style="gap:6px">
   <button class="row muted" data-act="tab" data-tab="more" style="border:0;background:none;padding:0;gap:2px;font-size:14px;font-weight:500;min-height:32px">${svg('back', 18)}더보기</button>
@@ -1192,22 +1129,16 @@ function tripForm(isNew) {
       <label class="field">대표 사진<input type="file" name="cover" accept="image/*" style="padding-top:10px"></label>
       <button class="btn" type="submit">${isNew ? '만들기' : '저장'}</button>
       ${isNew ? '' : `<button class="btn ghost" type="button" data-act="mbTheme">Mapbox 색: ${S.ui.mbTheme === 'original' ? '내가 꾸민 원래 색' : '앱 지도 스타일'} (바꾸기)</button>
-      ${Object.keys(DB.trips).length > 1 ? `<button class="btn danger" type="button" data-act="delTrip">이 여행 삭제</button>` : `<button class="btn danger" type="button" data-act="reset">예시 데이터로 초기화</button>`}`}
+      ${Object.keys(DB.trips).length > 1 ? `<button class="btn danger" type="button" data-act="delTrip">이 여행 삭제</button>` : `<button class="btn danger" type="button" data-act="reset">처음 상태로 초기화</button>`}`}
     </form>`);
 }
-function openOnMap(p, keepZoom) {
+function openOnMap(p) {
   closeSheet(); S.ui.tab = 'map'; S.ui.selPlace = p.id; delete S.ui.pinTodo; save(); render();
-  requestAnimationFrame(() => {
-    const pts2 = keepZoom ? routeStops().map((x) => [x.lng, x.lat]) : null;
-    whenMapReady(() => {
-      if (pts2 && pts2.length > 1) map.fitBounds([[Math.min(...pts2.map((c) => c[0])), Math.min(...pts2.map((c) => c[1]))], [Math.max(...pts2.map((c) => c[0])), Math.max(...pts2.map((c) => c[1]))]], { padding: { top: headerH() + 20, bottom: bottomH() + 20, left: 50, right: 50 }, maxZoom: 16.5 });
-      else map.flyTo({ center: [p.lng, p.lat], zoom: 16.5, padding: { top: headerH(), bottom: bottomH(), left: 0, right: 0 } });
-    });
-  });
+  requestAnimationFrame(() => whenMapReady(() => map.flyTo({ center: [p.lng, p.lat], zoom: 16.5, padding: { top: headerH(), bottom: bottomH(), left: 0, right: 0 } })));
 }
 function switchTrip(id) {
   DB.cur = id; S = DB.trips[id]; TZ = S.trip.tz || 'Asia/Manila';
-  view = null; S.ui.tab = 'home'; save(); closeSheet(); render(); refreshMap();
+  S.ui.tab = 'map'; S.ui.selPlace = null; save(); closeSheet(); render(); refreshMap();
 }
 async function geocodeCity(t) {
   if (!t.trip.city) return;
@@ -1301,7 +1232,7 @@ async function applyImport(replace) {
 
 /* ========= 일정 (보강) ========= */
 function todoRow(it, withActions) {
-  const p = placeById(it.placeId), pt = todoPoint(it);
+  const p = placeById(it.placeId);
   return `<div class="card" style="padding:6px 4px 8px 4px">
     <div class="row" style="gap:4px;align-items:flex-start">
     <button class="icon" data-act="toggle" data-id="${it.id}" aria-label="완료 표시"><span class="check ${it.done ? 'on' : ''}">${it.done ? svg('check', 14, '#fff', 3) : ''}</span></button>
@@ -1320,7 +1251,6 @@ function viewTodo() {
   const day = S.ui.day = tripDays().includes(S.ui.day) ? S.ui.day : currentDay();
   const list = sortTodos(todosOf(day)), t = sunTimes(day);
   const done = list.filter((x) => x.done).length;
-  const route = gRoute(list.map(todoPoint).filter(Boolean));
   return `<div class="stack" style="gap:14px">
     <div class="between"><h1>일정</h1><span class="muted" style="font-size:13px;font-weight:500">${done} / ${list.length} 완료</span></div>
     ${dayTabs('pickDay', day)}
@@ -1731,7 +1661,6 @@ function weatherBlock() {
     <span class="small muted">초록 테두리는 여행 날짜예요. 예보 범위 밖이면 출발이 가까워진 뒤 다시 확인해 주세요. 출처: Open-Meteo · ${new Date(w.at).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
   </div>`;
 }
-const wxNowText = () => { const w = wxOf(); if (!w || !w.data.current) return ''; return `${Math.round(w.data.current.temperature_2m)}° ${WX(w.data.current.weather_code)[0]}`; };
 
 /* ========= 여행 기록 ========= */
 function viewJournal() {
@@ -1778,7 +1707,7 @@ document.addEventListener('click', (e) => {
       else { b.dataset.confirm = '1'; b.textContent = '한 번 더 누르면 삭제돼요'; }
       break;
     case 'reset':
-      if (b.dataset.confirm) { const t = ensureTrip(seed()); t.id = S.id; DB.trips[S.id] = t; switchTrip(S.id); toast('예시 데이터로 초기화했어요'); }
+      if (b.dataset.confirm) { const t = ensureTrip(seed()); t.id = S.id; DB.trips[S.id] = t; switchTrip(S.id); toast('처음 상태로 초기화했어요'); }
       else { b.dataset.confirm = '1'; b.textContent = '한 번 더 누르면 초기화돼요'; }
       break;
     case 'share': shareSheet(); break;
@@ -1797,7 +1726,7 @@ document.addEventListener('click', (e) => {
     case 'plist': S.ui.placeList = b.dataset.f; rr(); break;
     case 'mbTheme':
       S.ui.mbTheme = S.ui.mbTheme === 'original' ? 'app' : 'original'; save();
-      if (map) { try { map.remove(); } catch (er) {} map = null; mapState = 'idle'; markers = []; numMarkers = []; decorMarkers = []; meMarker = null; }
+      if (map) { try { map.remove(); } catch (er) {} map = null; mapState = 'idle'; markers = []; meMarker = null; }
       closeSheet(); toast(S.ui.mbTheme === 'original' ? '내가 꾸민 원래 색으로 보여드릴게요' : '앱 지도 스타일로 칠할게요'); break;
     case 'showOnMap': {
       const t = findTodo(id), d = findTodoDay(id), p = t && placeById(t.placeId);
@@ -2055,8 +1984,6 @@ document.addEventListener('click', (e) => {
     case 'tab': closeSheet(); if (POI) closePoi(true); S.ui.tab = b.dataset.tab; rerender(); break;
     case 'poiClose': closePoi(); break;
     case 'diagTap': { const now = Date.now(); diagTaps = now - diagT < 600 ? diagTaps + 1 : 1; diagT = now; if (diagTaps >= 5) { diagTaps = 0; showDiag(); } break; }
-    case 'favSheet': favSheet(); break;
-    case 'favGo': { const p = placeById(id); closeSheet(); if (!p) break; if (!p.lat) { toast('위치를 확인하는 중이에요. 잠시 후 다시 눌러 주세요'); resolveFavs(); break; } if (POI) closePoi(true); S.ui.selPlace = p.id; save(); refreshMap(); whenMapReady(() => map.flyTo({ center: [p.lng, p.lat], zoom: Math.max(map.getZoom(), 16.5), padding: { top: headerH(), bottom: bottomH() + 120, left: 0, right: 0 } })); break; }
     case 'favToggle': { const p = placeById(id); if (!p) break; toggleFav(p); if (b.dataset.sheet) placeSheet(p); if (S.ui.tab === 'map') { refreshMap(); renderMapCats(); } else rerender(); break; }
     case 'poiFav': { const p = POI; if (!p) break; const place = { id: uid(), name: p.gname || p.name || CATS[p.cat] || '새 장소', cat: CATS[p.cat] ? p.cat : 'etc', area: '', lat: +p.lat.toFixed(6), lng: +p.lng.toFixed(6), menu: [], memo: '', coordV: 2, fav: true }; if (p.gid) place.gid = p.gid; S.places.unshift(place); closePoi(true); S.ui.selPlace = place.id; save(); refreshMap(); renderMapCats(); toast('즐겨찾기에 넣었어요'); break; }
     case 'poiFull': poiFullSheet(); break;
@@ -2065,7 +1992,6 @@ document.addEventListener('click', (e) => {
     case 'gFull': { const p = placeById(id); if (p) ensureGid(p).then((gid) => gid ? gFullSheet(gid, p.name) : toast('Google에서 이 장소를 찾지 못했어요')); break; }
     case 'homeDay': S.ui.day = b.dataset.day; S.ui.tab = 'todo'; rerender(); break;
     case 'pickDay': S.ui.day = b.dataset.day; rerender(); break;
-    case 'mapDay': S.ui.day = b.dataset.day; save(); renderMap(); refreshMap(); break;
     case 'toggle': { const t = findTodo(id); t.done = !t.done; rerender(); break; }
     case 'delTodo': { const d = findTodoDay(id); S.todos[d] = S.todos[d].filter((x) => x.id !== id); rerender(); toast('삭제했어요'); break; }
     case 'editTodo': todoForm(findTodo(id)); break;
@@ -2073,18 +1999,14 @@ document.addEventListener('click', (e) => {
     case 'openPlace': placeSheet(placeById(id)); break;
     case 'todoInfo': todoInfoSheet(findTodo(id)); break;
     case 'toggleInfo': { const t = findTodo(id); if (t) { t.done = !t.done; save(); todoInfoSheet(t); if (S.ui.tab !== 'map') rerender(); } break; }
-    case 'addPlace': addPlaceForm(null); break;
     case 'delPlace': S.places = S.places.filter((p) => p.id !== id); closeSheet(); save(); render(); refreshMap(); toast('장소를 지웠어요'); break;
     case 'delMenu': { const p = placeById(b.dataset.pid); p.menu = p.menu.filter((m) => m.id !== id); save(); placeSheet(p); break; }
     case 'placeToDay': { const p = placeById(id); todosOf(b.dataset.day).push({ id: uid(), time: '', title: p.name, placeId: p.id, done: false }); save(); closeSheet(); render(); refreshMap(); toast(`D${dayIndex(b.dataset.day)} 일정에 담았어요`); break; }
     case 'placeToTodo': todoForm(null, placeById(id)); break;
-    case 'pfilter': S.ui.placeFilter = b.dataset.f; S.ui.selPlace = null; if (POI) closePoi(true); save(); renderMapCats(); refreshMap(); if (b.dataset.f !== 'all') fitFiltered(); break;
     case 'stab': { const t = b.dataset.t; S.ui.sheetTab = t; S.ui.placeFilter = t === 'today' ? 'all' : t; S.ui.selPlace = null; if (POI) closePoi(true); save(); renderMapCats(); refreshMap(); if (t !== 'today') fitFiltered(); break; }
     case 'favFab': { const on = S.ui.placeFilter !== 'fav'; S.ui.placeFilter = on ? 'fav' : 'all'; S.ui.sheetTab = on ? 'fav' : 'today'; S.ui.selPlace = null; if (POI) closePoi(true); save(); renderMapCats(); refreshMap(); if (on) fitFiltered(); toast(on ? '즐겨찾기만 모아서 보여 줘요' : '즐겨찾기 표시를 껐어요'); break; }
     case 'selFromList': selFromList(id); break;
     case 'searchClear': { const inp = $('#placeSearch'); if (inp) { inp.value = ''; S.ui.sheetQ = ''; $('#msheet').classList.remove('hasq'); renderSheetList(); inp.focus(); } break; }
-    case 'selPlace': S.ui.selPlace = id; save(); refreshMap(); break;
-    case 'searchPick': selFromList(id); break;
     case 'selClear': S.ui.selPlace = null; save(); refreshMap(); break;
     case 'locate': locate(); break;
     case 'mapRetry': if (map) { try { map.remove(); } catch (er) {} map = null; } mapState = navigator.onLine === false ? 'failed' : 'idle'; renderMap(); if (mapState === 'failed') toast('아직 인터넷에 연결되지 않았어요'); break;
@@ -2106,7 +2028,9 @@ document.addEventListener('click', (e) => {
     case 'delItemRow': { const r = b.closest('.itrow'); if (r) r.remove(); break; }
     case 'openTicket': ticketDetail(S.tickets.find((t) => t.id === id)); break;
     case 'editTicket': ticketForm(S.tickets.find((t) => t.id === id)); break;
-    case 'delTicket': { const t = S.tickets.find((x) => x.id === id); t.imgs.forEach(delImg); S.tickets = S.tickets.filter((x) => x.id !== id); closeSheet(); rerender(); toast('티켓을 지웠어요'); break; }
+    case 'delTicket': { const t = S.tickets.find((x) => x.id === id); if (!t) break;
+      if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.innerHTML = '<span style="font-size:13px;font-weight:700;color:#B3412A;white-space:nowrap">한 번 더 누르면 삭제</span>'; b.style.width = 'auto'; break; }
+      t.imgs.forEach(delImg); t.files.forEach((f) => delImg(f.id)); S.tickets = S.tickets.filter((x) => x.id !== id); closeSheet(); rerender(); toast('예약을 지웠어요'); break; }
   }
 });
 
