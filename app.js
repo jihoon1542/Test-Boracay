@@ -151,6 +151,21 @@ function applyBookings(t) {
   add({ cat: 'flight', title: 'TW126 칼리보 → 인천', date: D(4), time: '', place: '칼리보 국제공항', memo: '출발 시간과 예약번호를 넣어 주세요' });
   t.planV = 2;
 }
+// 티웨이 동계 스케줄 (2026.10.25~): TW125 인천 09:20 → 칼리보 12:55, TW126 칼리보 13:55 → 인천 19:05 (모두 현지 시간)
+function applyFlightTimes(t) {
+  const D = (i) => addDays(t.trip.start, i);
+  const tk = (re) => t.tickets.find((x) => re.test(x.title));
+  const f1 = tk(/TW125 인천/), f2 = tk(/TW126 칼리보/), pu = tk(/픽업 \(TW125\)/);
+  if (f1 && !f1.time) Object.assign(f1, { time: '09:20', memo: '인천 09:20 출발(한국 시간) → 칼리보 12:55 도착(현지 시간) · 약 4시간 35분\n예약번호를 넣어 주세요' });
+  if (f2 && !f2.time) Object.assign(f2, { time: '13:55', memo: '칼리보 13:55 출발(현지 시간) → 인천 19:05 도착(한국 시간)\n예약번호를 넣어 주세요' });
+  if (pu && !pu.time) Object.assign(pu, { time: '12:55', memo: '예약 완료 · TW125 12:55 칼리보 도착 후 픽업 → 헤난까지 차+배로 약 2시간' });
+  const d0 = (t.todos[D(0)] = t.todos[D(0)] || []), d4 = (t.todos[D(4)] = t.todos[D(4)] || []);
+  const p = d0.find((x) => /픽업/.test(x.title));
+  if (p && !p.time) Object.assign(p, { time: '12:55', note: 'TW125 12:55 칼리보 도착(현지 시간) → 픽업 차량으로 헤난까지 약 2시간 · 15:00 체크인' });
+  const klo = (t.places.find((x) => x.id === 'klo') || {}).id;
+  if (!d4.some((x) => /TW126/.test(x.title) && /출발/.test(x.title) && !/크림슨/.test(x.title))) d4.push({ id: uid(), time: '13:55', title: 'TW126 칼리보 출발', placeId: klo || '', cat: 'move', note: '칼리보 13:55 출발 → 인천 19:05 도착(한국 시간)', done: false });
+  t.planV = 3;
+}
 function seed() {
   const start = '2026-12-16';
   const P = [
@@ -972,6 +987,7 @@ function ensureTrip(t) {
   }
   t.planV = t.planV || 1;
   if (t.planV < 2 && t.trip.start === '2026-12-16') applyBookings(t);
+  if (t.planV < 3 && t.trip.start === '2026-12-16') applyFlightTimes(t);
   t.ui.mapMode = 'mapbox'; // 기본(그림) 지도는 없애고 Mapbox만 씀
   if (t.ui.tab === 'home') t.ui.tab = 'map'; // 홈은 지도로 합쳐짐
   if (!t.favV) {
