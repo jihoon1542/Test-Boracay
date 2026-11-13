@@ -340,3 +340,53 @@ input[type=checkbox]:checked{background-color:#17806D;border-color:#17806D;backg
 .suit-done b{font-size:20px;color:#17806D;background:#fff;border-radius:12px;padding:4px 12px}
 .suit-done span{font-size:12px;color:#5B6B6E;background:#fff;border-radius:8px;padding:2px 8px}
 @keyframes sdone{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
+/* 코디 */
+.addo{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;font-size:12px;font-weight:700;color:#17806D;border:1px dashed #8FD3BF;border-radius:999px;padding:3px 10px;background:none;margin-top:4px;min-height:28px}
+.ofrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1.5px solid #9FDCC9;background:#E6F3EF;border-radius:16px;padding:9px 10px 9px 14px;margin:2px 0}
+.ofrow-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.ofrow-t b{font-size:15px;color:#0F5E4E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ofrow-t small{font-size:12px;color:#17806D}
+.ofthumbs{display:flex;flex-shrink:0}
+.ofth{width:38px;height:38px;border-radius:11px;border:2px solid #E6F3EF;background:#fff;margin-left:-9px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.ofth img{width:100%;height:100%;object-fit:cover}
+.ofin{border-left:2px dashed #9FDCC9;margin-left:12px;padding-left:8px}
+.ofperson{display:flex;flex-direction:column;gap:8px;background:#F4F7F5;border-radius:14px;padding:10px}
+.ofperson b{font-size:14px;color:#17806D}
+.ofimgs{display:flex;gap:6px;flex-wrap:wrap}
+.ofimgs span{position:relative}
+.ofimgs img{width:64px;height:64px;object-fit:cover;border-radius:10px;display:block}
+.ofx{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:0;background:#B3412A;color:#fff;font-size:14px;line-height:22px;padding:0}
+.ofwho{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.ofwho>div{background:#F4F7F5;border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.ofwho b{font-size:14px}
+.ofwho p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.5;word-break:keep-all}
+.ofpics{display:grid;gap:4px}
+.ofpics img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;display:block}
+.ofnone{display:flex;align-items:center;justify-content:center;aspect-ratio:3/4;border-radius:10px;background:#fff}
+.ofnone .pic{font-size:44px!important}
+.ofnone svg.pic{width:52px;height:52px}
+/* 코디북 카드 */
+.ofcard{display:flex;flex-direction:column;gap:10px;width:100%;text-align:left;border:0;background:#fff;border-radius:18px;padding:14px;box-shadow:0 1px 0 rgba(16,38,43,.06)}
+.ofcard-h{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.ofcard-h b{font-size:16px;color:#0F5E4E}
+.ofcard-h em{font-style:normal;font-size:11px;font-weight:700;color:#0F5E4E;background:#E6F3EF;border-radius:6px;padding:1px 6px}
+.ofcard-h small{margin-left:auto;font-size:12px;color:#17806D}
+.ofcard-who{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ofcard-p{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ofcard-pic{position:relative;display:flex;align-items:center;justify-content:center;height:136px;border-radius:12px;background:#F4F7F5;overflow:hidden}
+.ofcard-pic img{width:100%;height:100%;object-fit:cover}
+.ofcard-pic .pic{font-size:34px!important}
+.ofcard-pic svg.pic{width:48px;height:48px}
+.ofcard-pic i{position:absolute;right:6px;bottom:6px;font-style:normal;font-size:11px;font-weight:700;color:#fff;background:rgba(16,38,43,.55);border-radius:8px;padding:1px 6px}
+.ofcard-n{font-size:13px;font-weight:700}
+.ofcard-i{font-size:12px;color:var(--muted);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:keep-all}
+.ofcard-todos{display:flex;flex-direction:column;gap:3px;border-top:1px dashed #CFE6DE;padding-top:9px}
+.ofcard-todos span{display:flex;gap:8px;font-size:13px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ofcard-todos b{font-weight:500;color:#17806D;flex-shrink:0}
+/* 짐 후보 */
+.ctiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ctile{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;border:1.5px solid transparent;background:#fff;border-radius:14px;padding:10px 3px 8px;font-size:11px;color:var(--ink)}
+.ctile span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
+.ctile i{position:absolute;top:4px;right:5px;font-style:normal;font-size:11px;font-weight:700;color:#9AA5A7}
+.ctile.on{border-color:#2DAA8A;background:#E6F3EF}
+.ctile.on i{color:#17806D}

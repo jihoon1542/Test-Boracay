@@ -15,6 +15,7 @@ const I = {
   map:'<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>',
   list:'<path d="M10 6h10M10 12h10M10 18h10"/><path d="m3 6 1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/>',
   sun:'<path d="M3 18h18M6 21h12M12 3v3M4.2 8.2l1.4 1.4M19.8 8.2l-1.4 1.4M7 18a5 5 0 0 1 10 0"/>',
+  shirt:'<path d="M8 4 3 7l2 5 3-1.5V20h8v-9.5L19 12l2-5-5-3a4 4 0 0 1-8 0z"/>',
   ticket:'<path d="M4 6h16v4a2 2 0 0 0 0 4v4H4v-4a2 2 0 0 0 0-4z"/><path d="M14 6v2M14 11v2M14 16v2"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   check:'<path d="M5 12l5 5L20 7"/>',
@@ -290,7 +291,7 @@ function render() {
   if (isMap) { renderMap(); return; }
   if (render._last !== S.ui.tab) { render._last = S.ui.tab; requestAnimationFrame(() => { $('#view').scrollTop = 0; }); }
   if (S.ui.tab === 'sunset') maybeWeather();
-  $('#view').innerHTML = ({ todo: viewTodo, sunset: viewSunset, tickets: viewTickets, money: viewMoney, more: viewMore, places: viewPlaces, check: viewCheck, journal: viewJournal }[S.ui.tab] || viewTodo)();
+  $('#view').innerHTML = ({ todo: viewTodo, sunset: viewSunset, tickets: viewTickets, money: viewMoney, outfits: viewOutfits, more: viewMore, places: viewPlaces, check: viewCheck, journal: viewJournal }[S.ui.tab] || viewTodo)();
   if (S.ui.tab === 'money') updateFx();
   hydrateImages();
 }
@@ -1068,7 +1069,7 @@ function ensureTrip(t) {
   t.trip = Object.assign({ name:'보라카이 여행', city:'Boracay', lat:BORACAY.lat, lng:BORACAY.lng, tz:'Asia/Manila', members:['나','동행'], budget:0, cover:null }, t.trip || {});
   t.alarm = t.alarm || { offset:30, off:{}, fired:{} };
   t.todos = t.todos || {}; t.places = t.places || []; t.tickets = t.tickets || [];
-  t.checklist = t.checklist || []; t.expenses = t.expenses || []; t.journal = t.journal || [];
+  t.checklist = t.checklist || []; t.expenses = t.expenses || []; t.journal = t.journal || []; t.outfits = t.outfits || [];
   t.ui = Object.assign({ tab:'map', day:t.trip.start, placeFilter:'all', checkFilter:'all', placeList:'all' }, t.ui || {});
   delete t.ui.mapMode; delete t.ui.ticketFilter; // 더 안 쓰는 옛 설정
   t.tickets.forEach((x) => { x.imgs = x.imgs || []; x.files = x.files || []; if (TCAT_OLD[x.cat]) x.cat = TCAT_OLD[x.cat]; if (!TCATS[x.cat]) x.cat = 'etc'; });
@@ -1144,7 +1145,7 @@ const members = () => (S.trip.members && S.trip.members.length ? S.trip.members 
 const won = (n) => '₩ ' + Math.round(n || 0).toLocaleString('ko-KR');
 const krwPer = (cur) => cur === 'KRW' ? 1 : (DB.fx.rates[cur] || (cur === 'PHP' ? 24 : null));
 const gSearch = (p) => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.lat ? `${p.lat},${p.lng}` : p.q);
-const SUBTABS = ['places', 'check', 'money', 'sunset', 'journal'];
+const SUBTABS = ['places', 'check', 'outfits', 'money', 'sunset', 'journal'];
 const subHead = (title, desc, action) => `<div class="stack" style="gap:6px">
   <button class="row muted" data-act="tab" data-tab="more" style="border:0;background:none;padding:0;gap:2px;font-size:14px;font-weight:500;min-height:32px">${svg('back', 18)}더보기</button>
   <div class="between" style="align-items:flex-start"><div class="stack" style="gap:4px"><h1>${title}</h1>${desc ? `<span class="muted" style="font-size:13px">${desc}</span>` : ''}</div>${action || ''}</div></div>`;
@@ -1159,6 +1160,7 @@ function viewMore() {
     ['check', '체크리스트', 'checksq', ck.length ? `준비 ${ckDone} / ${ck.length}` : '기본 준비물로 시작'],
     ['money', '경비 · 정산', 'coin', S.expenses.length ? `${S.expenses.length}건 · ${won(settlement().total)}` : '페소로 적으면 원화로 바꿔줘요'],
     ['sunset', '날씨 · 일몰', 'sun', `일몰 ${fmtTime(sunTimes(currentDay()).set)} · 선셋 알람`],
+    ['outfits', '코디북', 'shirt', (S.outfits || []).length ? `코디 ${(S.outfits || []).length}개` : '일정마다 입을 옷 정하기'],
     ['journal', '여행 사진 · 기록', 'img', S.journal.length ? `사진 ${S.journal.filter((j) => j.photo).length}장 · 메모 ${S.journal.filter((j) => !j.photo).length}개` : '사진을 폴라로이드처럼 붙여 둬요']
   ];
   return `<div class="stack" style="gap:16px">
@@ -1279,6 +1281,7 @@ function imgIdsOf(t) {
   t.places.forEach((p) => p.photo && ids.push(p.photo));
   t.tickets.forEach((x) => { ids.push(...(x.imgs || [])); (x.files || []).forEach((f) => ids.push(f.id)); });
   t.journal.forEach((j) => j.photo && ids.push(j.photo));
+  (t.outfits || []).forEach((o) => Object.values(o.people || {}).forEach((pp) => ids.push(...(pp.imgs || []))));
   return ids;
 }
 async function exportData(onlyCurrent) {
@@ -1334,24 +1337,110 @@ function todoRow(it, withActions) {
       <span style="font-size:15px;font-weight:500" class="${it.done ? 'done-text' : ''}">${esc(it.title)} ${it.sunset ? '<span class="tag">선셋</span>' : ''}</span>
       ${p ? `<button data-act="openPlace" data-id="${p.id}" class="row small muted" style="gap:4px;border:0;background:none;padding:0;text-align:left">${svg('pin', 12)}${esc(p.name)}</button>` : it.where ? `<span class="row small muted" style="gap:4px">${svg('pin', 12)}${esc(it.where)}</span>` : ''}
       ${it.note ? `<span class="small muted" style="white-space:pre-wrap">${esc(it.note)}</span>` : ''}
-      <span class="row" style="gap:14px;margin-top:2px"><button data-act="showOnMap" data-id="${it.id}" class="row small" style="gap:4px;border:0;background:none;padding:0;color:#17806D;font-weight:700;min-height:32px;text-align:left">${svg('map', 13, '#17806D')}${p && p.lat ? '지도에서 보기' : '지도에 위치 정하기'}</button>${p && p.lat ? `<button data-act="navTo" data-id="${p.id}" class="row small" style="gap:4px;border:0;background:none;padding:0;color:#1A73E8;font-weight:700;min-height:32px">${svg('nav', 13, '#1A73E8')}길안내</button>` : ''}</span>
+      <span class="row" style="gap:4px 12px;margin-top:2px;flex-wrap:wrap;white-space:nowrap"><button data-act="showOnMap" data-id="${it.id}" class="row small" style="gap:4px;border:0;background:none;padding:0;color:#17806D;font-weight:700;min-height:32px;text-align:left">${svg('map', 13, '#17806D')}${p && p.lat ? '지도에서 보기' : '지도에 위치 정하기'}</button>${p && p.lat ? `<button data-act="navTo" data-id="${p.id}" class="row small" style="gap:4px;border:0;background:none;padding:0;color:#1A73E8;font-weight:700;min-height:32px">${svg('nav', 13, '#1A73E8')}길안내</button>` : ''}${withActions ? `<button data-act="addOutfit" data-time="${esc(it.time || '')}" class="row small" style="gap:4px;border:0;background:none;padding:0;color:#17806D;font-weight:700;min-height:32px">${svg('shirt', 13, '#17806D')}코디</button>` : ''}</span>
     </div>
     ${withActions ? `<button class="icon" data-act="editTodo" data-id="${it.id}" aria-label="수정">${svg('edit', 18, '#5B6B6E')}</button>
     <button class="icon" data-act="delTodo" data-id="${it.id}" aria-label="삭제">${svg('trash', 18, '#B3412A')}</button>` : ''}
     </div></div>`;
+}
+/* ========= 코디: 일정 사이에 "여기서부터 이 옷" 구간 ========= */
+// 코디 = { id, day, at: 'HH:MM'(이 시간 일정부터, ''면 하루 시작), title, tag, people: { 이름: { imgs: [], items: '' } } }
+const dayOutfits = (day) => (S.outfits || []).filter((o) => o.day === day).sort((a, b) => ((a.at || '') < (b.at || '') ? -1 : 1));
+function outfitRange(o) {
+  const list = dayOutfits(o.day), i = list.indexOf(o), next = list[i + 1];
+  return `${o.at || '하루 시작'} ~ ${next ? (next.at || '') + ' 전' : '하루 끝'}`;
+}
+// 사람별 대표 그림: 첫 사진, 없으면 첫 아이템의 아이콘
+function outfitThumb(pp) {
+  if (pp && pp.imgs && pp.imgs.length) return `<img data-img="${pp.imgs[0]}" alt="">`;
+  const first = ((pp && pp.items) || '').split(/[,·\n]/)[0].trim();
+  return first ? iconHtml(packIcon({ title: first }).icon, 20) : iconHtml('👕', 20);
+}
+function outfitRow(o) {
+  return `<button class="ofrow" data-act="openOutfit" data-id="${o.id}">
+    <span class="ofrow-t"><b>${esc(o.title || '코디')}</b><small>${outfitRange(o)}${o.tag ? ` · ${esc(o.tag)}` : ''}</small></span>
+    <span class="ofthumbs">${members().map((m) => `<span class="ofth">${outfitThumb((o.people || {})[m])}</span>`).join('')}</span>
+  </button>`;
+}
+// 일정과 코디를 시간순으로 섞어서: 코디 시간(at) 이후의 일정은 그 코디 구간 안에 들어감
+function todoWithOutfits(day, list) {
+  const outs = dayOutfits(day).slice(), html = [];
+  const flush = (time) => { while (outs.length && (outs[0].at || '') <= time) html.push(outfitRow(outs.shift())); };
+  list.forEach((x) => { flush(x.time || '99:99'); html.push(`<div class="${dayOutfits(day).some((o) => (o.at || '') <= (x.time || '99:99')) ? 'ofin' : ''}">${todoRow(x, true)}</div>`); });
+  flush('99:99:99');
+  return html.join('');
+}
+function outfitForm(existing, day, at) {
+  const o = existing || { title: '', at: at || '', tag: '', people: {} };
+  openSheet(`<h2 style="margin-bottom:14px">${existing ? '코디 고치기' : '여기서부터 코디'}</h2>
+    <form class="stack" style="gap:12px" data-form="outfit" data-id="${existing ? existing.id : ''}" data-day="${existing ? existing.day : day}">
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:10px">
+        <label class="field">코디 이름<input name="title" value="${esc(o.title || '')}" placeholder="예: 호핑룩"></label>
+        <label class="field">이 시간부터<input type="time" name="at" value="${esc(o.at || '')}"></label>
+      </div>
+      <label class="field">태그 (선택)<input name="tag" value="${esc(o.tag || '')}" placeholder="예: 커플룩, 선셋 사진용"></label>
+      ${members().map((m, i) => { const pp = (o.people || {})[m] || {}; return `<div class="ofperson">
+        <b>${esc(m)}</b>
+        ${(pp.imgs || []).length ? `<div class="ofimgs">${pp.imgs.map((id) => `<span><img data-img="${id}" alt=""><button type="button" class="ofx" data-act="outfitImgDel" data-oid="${existing ? existing.id : ''}" data-who="${esc(m)}" data-img="${id}" aria-label="사진 빼기">×</button></span>`).join('')}</div>` : ''}
+        <label class="field" style="margin:0">사진 (여러 장)<input type="file" name="imgs${i}" accept="image/*" multiple></label>
+        <label class="field" style="margin:0">아이템<input name="items${i}" value="${esc(pp.items || '')}" placeholder="예: 래쉬가드, 보드숏, 아쿠아슈즈"></label>
+      </div>`; }).join('')}
+      <button class="btn" type="submit">${existing ? '저장하기' : '코디 넣기'}</button>
+    </form>`);
+  hydrateImages();
+}
+function outfitDetail(o) {
+  if (!o) return;
+  openSheet(`<div class="between" style="margin-bottom:6px"><span class="small" style="color:#17806D;font-weight:700">D${dayIndex(o.day)} ${fmtDate(o.day)} · ${outfitRange(o)}</span>
+      <span class="row" style="gap:0"><button class="icon" data-act="editOutfit" data-id="${o.id}" aria-label="수정">${svg('edit', 18, '#5B6B6E')}</button>
+      <button class="icon" data-act="delOutfit" data-id="${o.id}" aria-label="삭제">${svg('trash', 18, '#B3412A')}</button></span></div>
+    <h2 style="font-size:22px">${esc(o.title || '코디')}${o.tag ? ` <span class="tag" style="vertical-align:middle">${esc(o.tag)}</span>` : ''}</h2>
+    <div class="ofwho">${members().map((m) => { const pp = (o.people || {})[m] || {}; return `<div>
+      <div class="ofpics">${(pp.imgs || []).length ? pp.imgs.map((id) => `<img data-img="${id}" alt="">`).join('') : `<span class="ofnone">${outfitThumb(pp)}</span>`}</div>
+      <b>${esc(m)}</b><p>${esc(pp.items || '아이템 없음')}</p></div>`; }).join('')}</div>
+    ${members().some((m) => ((o.people || {})[m] || {}).items) ? `<button class="btn ghost" data-act="outfitToBag" data-id="${o.id}" style="width:100%;margin-top:12px">🧳 아이템 캐리어로 보내기</button>` : ''}`);
+  hydrateImages();
+}
+// 코디가 덮는 일정들: 코디 시작 시간부터 다음 코디 전까지
+function outfitTodos(o) {
+  const list = dayOutfits(o.day), i = list.indexOf(o), next = list[i + 1];
+  const from = o.at || '', to = next ? (next.at || '') : '99:99:99';
+  return sortTodos(todosOf(o.day).slice()).filter((x) => { const t = x.time || '99:99'; return t >= from && t < to; });
+}
+// 코디북: 날짜별로 코디마다 두 사람 사진 + 그 코디로 다니는 일정
+function outfitCard(o) {
+  const todos = outfitTodos(o);
+  return `<button class="ofcard" data-act="openOutfit" data-id="${o.id}">
+    <span class="ofcard-h"><b>${esc(o.title || '코디')}</b>${o.tag ? `<em>${esc(o.tag)}</em>` : ''}<small>${outfitRange(o)}</small></span>
+    <span class="ofcard-who">${members().map((m) => { const pp = (o.people || {})[m] || {}, n = (pp.imgs || []).length; return `<span class="ofcard-p">
+      <span class="ofcard-pic">${n ? `<img data-img="${pp.imgs[0]}" alt="">${n > 1 ? `<i>+${n - 1}</i>` : ''}` : outfitThumb(pp)}</span>
+      <span class="ofcard-n">${esc(m)}</span><span class="ofcard-i">${esc(pp.items || '아이템 없음')}</span></span>`; }).join('')}</span>
+    <span class="ofcard-todos">${todos.length ? todos.map((x) => `<span><b class="num">${esc(x.time || '--:--')}</b>${esc(x.title)}</span>`).join('') : '<span class="muted">이 시간대 일정 없음</span>'}</span>
+  </button>`;
+}
+function viewOutfits() {
+  const days = tripDays().filter((d) => dayOutfits(d).length), total = (S.outfits || []).length;
+  return `<div class="stack" style="gap:16px">
+    ${subHead('코디북', total ? `코디 ${total}개 · 누르면 크게 보고 고칠 수 있어요` : '일정마다 입을 옷을 한눈에.')}
+    ${days.length ? days.map((d) => `<section class="stack" style="gap:8px">
+      <div class="between"><b style="font-size:15px">D${dayIndex(d)} · ${fmtDate(d)}</b><button class="poilink" data-act="ofDay" data-day="${d}">일정 보기 ›</button></div>
+      ${dayOutfits(d).map(outfitCard).join('')}</section>`).join('')
+      : `<div class="empty">아직 코디가 없어요.<br>일정 탭에서 일정 옆 "코디"를 눌러 보세요.</div>`}
+  </div>`;
 }
 function viewTodo() {
   const day = S.ui.day = tripDays().includes(S.ui.day) ? S.ui.day : currentDay();
   const list = sortTodos(todosOf(day)), t = sunTimes(day);
   const done = list.filter((x) => x.done).length;
   return `<div class="stack" style="gap:14px">
-    <div class="between"><h1>일정</h1><span class="muted" style="font-size:13px;font-weight:500">${done} / ${list.length} 완료</span></div>
+    <div class="between"><h1>일정</h1><span class="row" style="gap:10px"><span class="muted" style="font-size:13px;font-weight:500">${done} / ${list.length} 완료</span>${(S.outfits || []).length ? `<button class="chip" data-act="tab" data-tab="outfits" style="height:34px">${svg('shirt', 14, '#17806D')} 코디 모아보기</button>` : ''}</span></div>
     ${dayTabs('pickDay', day)}
     <button data-act="tab" data-tab="sunset" class="between" style="border:0;height:46px;border-radius:14px;background:var(--coralbg);color:var(--coralink);padding:0 14px;font-size:14px;font-weight:500">
       <span class="row" style="gap:8px">${svg('sun', 18)} 이 날 일몰 ${fmtTime(t.set)}</span>
       <span class="small">${S.alarm.off[day] ? '알람 꺼짐' : `알람 ${S.alarm.offset}분 전`}</span>
     </button>
-    <div class="stack">${list.length ? list.map((x) => todoRow(x, true)).join('') : '<div class="empty">아직 일정이 없어요. 아래 버튼이나 지도에서 장소를 담아 보세요.</div>'}</div>
+    <div class="stack">${list.length || dayOutfits(day).length ? todoWithOutfits(day, list) : '<div class="empty">아직 일정이 없어요. 아래 버튼이나 지도에서 장소를 담아 보세요.</div>'}</div>
+    ${dayOutfits(day).length ? '' : `<button class="addo" data-act="addOutfit" data-time="" style="align-self:flex-start;margin:0">${svg('plus', 12, '#17806D', 2.6)} 이 날 코디 넣기</button>`}
     <button class="btn" data-act="addTodo">${svg('plus', 18, '#fff', 2.5)} 일정 추가</button>
   </div>`;
 }
@@ -1645,6 +1734,16 @@ function iconHtml(icon, size) {
   if (icon.startsWith('art:')) { const a = PACK_ART[icon.slice(4)]; return `<svg class="pic" viewBox="0 0 40 40" width="${size}" height="${size}" aria-hidden="true">${a ? a.svg : ''}</svg>`; }
   return `<span class="pic" style="font-size:${Math.round(size * 0.86)}px" aria-hidden="true">${icon}</span>`;
 }
+// 짐 후보: 카테고리별로 골라 담기
+const PACK_CATALOG = [
+  ['서류 · 돈', ['여권', '항공권', '신용카드', '현금', '지갑', '여행자보험 서류', '볼펜']],
+  ['전자기기', ['충전기 · 케이블', '보조배터리', '변환 어댑터', '멀티탭', '이어폰', '카메라', '셀카봉', '노트북', '시계']],
+  ['옷', ['티셔츠', '반바지', '바지', '원피스', '속옷', '양말', '잠옷', '얇은 겉옷', '모자', '운동화']],
+  ['물놀이', ['수영복', '래쉬가드', '아쿠아슈즈', '방수팩', '물안경', '비치타월', '슬리퍼', '샌들']],
+  ['세면 · 뷰티', ['칫솔 · 치약', '샴푸', '선크림', '화장품', '드라이기', '고데기', '빗', '면도기', '렌즈', '손톱깎이']],
+  ['건강', ['상비약', '멀미약', '밴드', '모기 기피제', '마스크']],
+  ['기타', ['선글라스', '우산', '목베개', '지퍼백', '물티슈', '텀블러', '간식', '가방']]
+];
 let lastPacked = null, bagPeek = false, holdFired = false;
 // 짐 칸을 꾹 누르면(0.55초) 아이콘 바꾸기 · 고치기 메뉴
 (() => {
@@ -1670,7 +1769,7 @@ function viewCheck() {
   const todoDone = todo.filter((x) => x.done).length;
   lastPacked = null;
   return `<div class="stack" style="gap:14px">
-    ${subHead('체크리스트', '짐을 누르면 캐리어에 쏙. 다시 누르면 꺼내져요.', addBtn('addCheck', '짐 추가'))}
+    ${subHead('체크리스트', '짐을 누르면 캐리어에 쏙. 다시 누르면 꺼내져요.', addBtn('packSheet', '짐 추가'))}
     <div class="between" style="gap:8px">
       <div class="chips" style="flex:1;min-width:0">${[['all', '전체'], ['공통', '공통'], ...members().map((m) => [m, m])].map(([k, v]) => `<button class="chip ${f === k ? 'on' : ''}" data-act="cfilter" data-f="${esc(k)}">${esc(v)}</button>`).join('')}</div>
       <button class="chip" data-act="checkMode" style="flex-shrink:0">${svg('list', 14)} 목록</button>
@@ -1688,9 +1787,10 @@ function viewCheck() {
       ${closed ? `<div class="suit-done"><b>다 쌌어요</b><span>눌러서 다시 열기</span></div>` : ''}
     </div>
     <span class="hbar" style="background:#E3E6E3;margin:0"><i style="width:${Math.round(packed.length / pack.length * 100)}%;background:#2DAA8A"></i></span>` : ''}
+    ${!pack.length ? `<button class="tkempty" data-act="packSheet" style="height:56px">🧳 짐 후보에서 골라 담기</button>` : ''}
     ${left.length ? `<div class="stack" style="gap:8px"><span class="small muted" style="font-weight:700">아직 안 챙긴 짐 · ${left.length}</span>
       <div class="ptiles">${left.map(info).map((o) => `<button class="ptile" data-act="pack" data-id="${o.x.id}" data-hold="itemMenu">${iconHtml(o.icon, 30)}<span>${esc(o.x.title)}</span>${f === 'all' && o.x.owner !== '공통' ? `<em>${esc(o.x.owner)}</em>` : ''}</button>`).join('')}
-      <button class="ptile padd" data-act="addCheck" data-cat="pack">${svg('plus', 26, '#17806D', 2.2)}<span>짐 추가</span></button></div>
+      <button class="ptile padd" data-act="packSheet">${svg('plus', 26, '#17806D', 2.2)}<span>짐 추가</span></button></div>
       <span class="small muted">꾹 누르면 아이콘 바꾸기 · 고치기</span></div>` : ''}
     ${todo.length ? `<div class="stack" style="gap:6px"><div class="between"><span class="small muted" style="font-weight:700">출발 전 할 일 · ${todoDone} / ${todo.length}</span></div>
       <div class="card" style="padding:0 6px 0 4px">${todo.map((x) => `<div class="list-row" style="gap:4px;padding:4px 0">
@@ -1698,6 +1798,23 @@ function viewCheck() {
         <span style="flex:1;font-size:15px" class="${x.done ? 'done-text' : ''}">${esc(x.title)}</span><span class="ctag">${CHECK_CATS[x.cat] || ''}</span>
         <button class="icon" data-act="editCheck" data-id="${x.id}" aria-label="수정" style="width:36px;height:36px">${svg('edit', 16, '#5B6B6E')}</button></div>`).join('')}</div></div>` : ''}
   </div>`;
+}
+function packCatalog(f) {
+  const ci = Math.min(+(S.ui.packCat || 0), PACK_CATALOG.length - 1), [, items] = PACK_CATALOG[ci];
+  const owner = f === 'all' ? '공통' : f;
+  const mine = S.checklist.filter((x) => x.cat === 'pack' && x.owner === owner);
+  return `<div class="stack" style="gap:10px">
+    <div class="between"><h2 style="font-size:20px">짐 추가</h2><span class="small muted">눌러서 ${esc(owner)} 짐에 담기</span></div>
+    <div class="chips">${PACK_CATALOG.map(([name], i) => `<button class="chip ${i === ci ? 'on' : ''}" data-act="packCat" data-i="${i}">${name}</button>`).join('')}</div>
+    <div class="ctiles">${items.map((t) => { const have = mine.find((x) => normName(x.title) === normName(t)); const ic = packIcon({ title: t }).icon;
+      return `<button class="ctile ${have ? 'on' : ''}" data-act="pickCand" data-t="${esc(t)}" aria-pressed="${!!have}">${iconHtml(ic, 26)}<span>${esc(t)}</span><i>${have ? (have.done ? '캐리어' : '✓') : '+'}</i></button>`; }).join('')}</div>
+  </div>`;
+}
+function packSheet() {
+  const keep = $('#sheet').style.display === 'block' ? $('#sheet').scrollTop : 0;
+  openSheet(`${packCatalog(S.ui.checkFilter || 'all')}
+    <button class="btn ghost" data-act="addCheck" data-cat="pack" style="width:100%;margin-top:12px">${svg('edit', 16, '#17806D')} 후보에 없는 짐 직접 적기</button>`);
+  $('#sheet').scrollTop = keep;
 }
 function itemMenu(x) {
   if (!x) return;
@@ -2028,9 +2145,41 @@ document.addEventListener('click', (e) => {
     case 'visitPlace': { const p = placeById(id); p.visited = !p.visited; save(); if ($('#sheet').style.display === 'block') placeSheet(p); render(); break; }
     case 'openFile': (async () => { const blob = await getImgBlob(id); if (!blob) { toast('파일을 찾을 수 없어요'); return; } const a2 = document.createElement('a'); a2.href = URL.createObjectURL(blob); a2.target = '_blank'; a2.rel = 'noopener'; document.body.appendChild(a2); a2.click(); a2.remove(); })(); break;
     case 'addCheck': checkForm(null, b.dataset.cat); break;
+    case 'addOutfit': outfitForm(null, S.ui.day, b.dataset.time); break;
+    case 'ofDay': S.ui.day = b.dataset.day; S.ui.tab = 'todo'; rr(); break;
+    case 'openOutfit': outfitDetail((S.outfits || []).find((o) => o.id === id)); break;
+    case 'editOutfit': outfitForm((S.outfits || []).find((o) => o.id === id)); break;
+    case 'delOutfit': {
+      const o = (S.outfits || []).find((x) => x.id === id); if (!o) break;
+      if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.innerHTML = '<span style="font-size:13px;font-weight:700;color:#B3412A;white-space:nowrap">한 번 더 누르면 삭제</span>'; b.style.width = 'auto'; break; }
+      Object.values(o.people || {}).forEach((pp) => (pp.imgs || []).forEach(delImg));
+      S.outfits = S.outfits.filter((x) => x.id !== id); closeSheet(); rr(); toast('코디를 지웠어요'); break;
+    }
+    case 'outfitImgDel': {
+      const o = (S.outfits || []).find((x) => x.id === b.dataset.oid); const pp = o && o.people[b.dataset.who]; if (!pp) break;
+      pp.imgs = pp.imgs.filter((x) => x !== b.dataset.img); delImg(b.dataset.img); save(); b.parentElement.remove(); break;
+    }
+    case 'outfitToBag': {
+      const o = (S.outfits || []).find((x) => x.id === id); if (!o) break;
+      const have = new Set(S.checklist.map((x) => normName(x.title))); let n = 0;
+      members().forEach((m) => String(((o.people || {})[m] || {}).items || '').split(/[,·\n]/).map((x) => x.trim()).filter(Boolean).forEach((t) => {
+        if (have.has(normName(t))) return; have.add(normName(t)); S.checklist.push({ id: uid(), title: t, cat: 'pack', owner: m, done: false }); n++;
+      }));
+      save(); closeSheet(); toast(n ? `캐리어 짐에 ${n}개를 넣었어요` : '이미 다 담겨 있어요'); break;
+    }
     case 'pack': { const x = S.checklist.find((y) => y.id === id); if (!x) break; if (holdFired) { holdFired = false; break; } x.done = true; lastPacked = id; if (navigator.vibrate) try { navigator.vibrate(12); } catch (e) {} rr(); break; }
     case 'unpack': { const x = S.checklist.find((y) => y.id === id); if (x) { x.done = false; bagPeek = false; rr(); } break; }
     case 'bagPeek': bagPeek = true; rr(); break;
+    case 'packSheet': packSheet(); break;
+    case 'packCat': S.ui.packCat = +b.dataset.i; save(); packSheet(); break;
+    case 'pickCand': {
+      const t = b.dataset.t, f = S.ui.checkFilter || 'all', owner = f === 'all' ? '공통' : f;
+      const have = S.checklist.find((x) => x.cat === 'pack' && x.owner === owner && normName(x.title) === normName(t));
+      if (have && have.done) { toast('이미 캐리어에 들어 있어요'); break; }
+      if (have) S.checklist = S.checklist.filter((x) => x !== have);
+      else S.checklist.push({ id: uid(), title: t, cat: 'pack', owner, done: false });
+      rr(); packSheet(); break;
+    }
     case 'checkMode': S.ui.checkMode = (S.ui.checkMode || 'bag') === 'bag' ? 'list' : 'bag'; rr(); break;
     case 'iconPick': iconPicker(S.checklist.find((y) => y.id === id)); break;
     case 'iconSet': { const x = S.checklist.find((y) => y.id === id); if (!x) break; x.icon = b.dataset.icon; S.iconMemo = S.iconMemo || {}; S.iconMemo[normName(x.title)] = x.icon; closeSheet(); rr(); toast('아이콘을 바꿨어요'); break; }
@@ -2121,6 +2270,18 @@ document.addEventListener('submit', async (e) => {
     }
     if (!id) S.tickets.push(t);
     closeSheet(); save(); render(); toast(id ? '저장했어요' : '예약을 보관했어요');
+  }
+  if (kind === 'outfit') {
+    S.outfits = S.outfits || [];
+    const o = id ? S.outfits.find((x) => x.id === id) : { id: uid(), day: form.dataset.day, people: {} };
+    Object.assign(o, { title: str('title'), at: str('at'), tag: str('tag') });
+    members().forEach((m, i) => {
+      const pp = o.people[m] = o.people[m] || { imgs: [], items: '' };
+      pp.items = str('items' + i);
+      for (const f of form.querySelector(`[name=imgs${i}]`).files) { if (!f.type.startsWith('image/')) continue; const imgId = uid(); putImg(imgId, f); pp.imgs.push(imgId); }
+    });
+    if (!id) S.outfits.push(o);
+    closeSheet(); save(); render(); toast(id ? '코디를 고쳤어요' : '코디를 넣었어요');
   }
   if (kind === 'check') {
     const data = { title: str('title'), cat: str('cat'), owner: str('owner') };
