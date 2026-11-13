@@ -302,3 +302,41 @@ input[type=checkbox]:checked{background-color:#17806D;border-color:#17806D;backg
 .jcolors input{position:absolute;opacity:0;pointer-events:none}
 .jcolors span{display:block;width:36px;height:36px;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
 .jcolors input:checked+span{box-shadow:0 0 0 2px #fff,0 0 0 4px #17806D}
+.tface{position:absolute;right:16px;top:calc(16px + env(safe-area-inset-top));display:none;font-size:13px;font-weight:700;color:#7A5A2E;background:rgba(255,255,255,.85);border-radius:12px;padding:8px 12px;cursor:pointer}
+.tegg.setface .tface{display:block}
+/* 체크리스트: 펼쳐진 캐리어 */
+.suit{position:relative;padding-top:20px;-webkit-user-select:none;user-select:none;transition:transform .7s cubic-bezier(.5,0,.3,1)}
+.suit-handle{position:absolute;top:0;right:calc(25% - 24px);width:48px;height:20px;border:3.5px solid #17806D;border-bottom:0;border-radius:12px 12px 0 0}
+.suit-case{display:grid;grid-template-columns:1fr 9px 1fr;perspective:900px}
+.suit-half{position:relative;border:3.5px solid #17806D;border-radius:20px;min-height:300px;padding:12px 10px 16px;background:#fff;display:flex;flex-direction:column;transition:transform .7s cubic-bezier(.5,0,.3,1)}
+.suit-zip{position:absolute;inset:5px;border:1.5px dashed #7CCDB6;border-radius:14px;pointer-events:none}
+.suit-lbl{position:relative;font-size:11.5px;font-weight:700;color:#17806D;text-align:center;margin-bottom:8px}
+.suit-pocket{position:relative;flex:1;border:1.5px solid #BFE6DA;border-radius:13px;padding:8px 6px;display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start;background-image:radial-gradient(#CDEDE3 1px,transparent 1.3px);background-size:8px 8px}
+.suit-in{position:relative;flex:1;padding:2px;display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start}
+.suit-strap{position:absolute;left:0;right:0;height:9px;background:#CDEDE3;border-radius:5px;pointer-events:none}
+.suit-hinge{display:flex;flex-direction:column;justify-content:space-evenly;align-items:center}
+.suit-hinge i{width:9px;height:32px;background:#17806D;border-radius:3px}
+.suit-wheel{position:absolute;bottom:-10px;width:15px;height:15px;border-radius:50%;background:#17806D}
+.pchip{position:relative;z-index:1;display:flex;align-items:center;gap:3px;max-width:100%;border:1px solid #9FDCC9;background:#fff;border-radius:999px;padding:2px 8px 2px 4px;font-size:11.5px;color:#0F5E4E;text-align:left}
+.pchip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pchip.pop{animation:pchipIn .45s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pchipIn{from{transform:translateY(40px) scale(.4);opacity:0}to{transform:none;opacity:1}}
+.pic{display:inline-flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0}
+.ptiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ptile{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;border:0;background:#fff;border-radius:16px;padding:12px 4px 10px;font-size:11.5px;color:var(--ink);box-shadow:0 1px 0 rgba(16,38,43,.06);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.ptile:active{transform:scale(.94)}
+.ptile span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
+.ptile em{position:absolute;top:5px;right:6px;font-style:normal;font-size:10px;color:#17806D;background:#E6F3EF;border-radius:6px;padding:0 4px}
+.padd{border:1.5px dashed #BFD6CF;background:none;box-shadow:none;color:#17806D}
+.ipgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;max-height:50vh;overflow-y:auto}
+.ipick{border:0;background:#fff;border-radius:12px;height:48px;display:flex;align-items:center;justify-content:center}
+/* 다 싸면 뚜껑이 본체 위로 닫힘 */
+.suit.closed .suit-lid{transform-origin:calc(100% + 4.5px) 50%;transform:rotateY(180deg);z-index:2}
+.suit.closed .suit-lid>*{visibility:hidden}
+.suit.closed .suit-half{height:300px;min-height:0;overflow:hidden}
+.suit.closed .suit-lid{background:repeating-linear-gradient(90deg,#E6F3EF 0 18px,#D3ECE4 18px 21px);box-shadow:inset 0 0 0 4px #fff}
+.suit.closed{cursor:pointer;transform:translateX(-25%)}
+.suit.closed .suit-done{position:absolute;left:50%;right:0;top:20px;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;z-index:3;pointer-events:none;animation:sdone .4s .55s both}
+.suit-done b{font-size:20px;color:#17806D;background:#fff;border-radius:12px;padding:4px 12px}
+.suit-done span{font-size:12px;color:#5B6B6E;background:#fff;border-radius:8px;padding:2px 8px}
+@keyframes sdone{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}

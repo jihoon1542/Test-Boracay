@@ -727,7 +727,8 @@ function applyAppTheme(m = map) {
 /* ----- 🐢 숨은 거북이: 호핑투어 바다(크로커다일 섬 근처)에서 헤엄침. 누르면 얼굴 거북이가 엉금엉금 ----- */
 // 레드웨일 호핑투어 미팅 장소(아스토리아 리조트 앞 바다)에서 헤엄침. 아스토리아 위치를 알면 거기서 바다 쪽(서쪽)으로 조금
 const turtleAt = () => { const a = placeById('astoria'); return a && a.lat ? [a.lng - 0.0016, a.lat + 0.0002] : [121.9128, 11.9737]; };
-const TURTLE_FACE = './turtle-face.png'; // 배경을 지운 얼굴 사진(투명 PNG). 없으면 그림 얼굴이 나옴
+// 얼굴 사진은 리포(공개)에 올리지 않고 각자 폰 안(IndexedDB)에만 저장. 거북이를 2초 길게 누르면 숨은 '얼굴 바꾸기' 버튼이 나옴. 사진이 없으면 그림 얼굴
+const FACE_ID = 'turtle-face';
 const turtleSvg = (head) => `<svg viewBox="-75 -72 185 144" aria-hidden="true">
   <g class="tfl tfl1"><ellipse cx="30" cy="-44" rx="13" ry="22" transform="rotate(-35 30 -44)" fill="#7DBE7A"/></g>
   <g class="tfl tfl2"><ellipse cx="30" cy="44" rx="13" ry="22" transform="rotate(35 30 44)" fill="#7DBE7A"/></g>
@@ -762,7 +763,7 @@ const turtleSide = () => `<svg viewBox="0 -40 340 230" aria-hidden="true">
     <path d="M224 128 C244 126 256 116 264 102" stroke="#7DBE7A" stroke-width="34" stroke-linecap="round" fill="none"/>
     <path d="M238 127 C250 123 258 115 262 108" stroke="#93CC8F" stroke-width="8" stroke-linecap="round" fill="none" opacity=".7"/>
     <g class="tfallback"><circle cx="260" cy="76" r="30" fill="#7DBE7A"/><circle cx="252" cy="68" r="3.6" fill="#1C2B2E"/><circle cx="270" cy="68" r="3.6" fill="#1C2B2E"/><path d="M252 84 q9 7 18 0" stroke="#1C2B2E" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="244" cy="80" r="4" fill="#F5A3A3" opacity=".7"/><circle cx="278" cy="80" r="4" fill="#F5A3A3" opacity=".7"/></g>
-    <image class="tphoto" href="${TURTLE_FACE}?v=3" x="222" y="-6" width="104" height="104"/>
+    <image class="tphoto" x="222" y="-6" width="104" height="104"/>
   </g>
   <path d="M34 140 Q40 44 140 38 Q236 44 246 140 Z" fill="#4F8F55"/>
   <path d="M50 136 Q58 58 140 53 Q222 58 230 136 Z" fill="#6FAF6B"/>
@@ -775,11 +776,28 @@ const turtleSide = () => `<svg viewBox="0 -40 340 230" aria-hidden="true">
 function turtleShow() {
   const box = document.createElement('div');
   box.className = 'tegg'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', '거북이');
-  box.innerHTML = `<div class="twalk"><div class="tbob">${turtleSide()}</div></div><p class="tsay">엉금엉금…</p><p class="tclose">아무 데나 누르면 바다로 돌아가요</p>`;
+  box.innerHTML = `<div class="twalk"><div class="tbob">${turtleSide()}</div></div><p class="tsay">엉금엉금…</p><p class="tclose">아무 데나 누르면 바다로 돌아가요</p>
+    <label class="tface">얼굴 바꾸기<input type="file" accept="image/*" hidden></label>`;
   const img = box.querySelector('.tphoto');
-  img.addEventListener('load', () => box.classList.add('hasface'));
-  img.addEventListener('error', () => img.remove());
-  box.addEventListener('click', () => { box.classList.add('bye'); setTimeout(() => box.remove(), 350); });
+  const showFace = (blob) => {
+    if (!blob) { box.classList.remove('hasface'); img.removeAttribute('href'); return; }
+    img.setAttribute('href', URL.createObjectURL(blob)); box.classList.add('hasface');
+  };
+  getImgBlob(FACE_ID).then(showFace);
+  // 2초 길게 누르면 숨은 버튼이 나타남 (사진 고르기는 버튼을 직접 눌러야 열려서 따로 둠)
+  let hold = null, held = false;
+  box.addEventListener('pointerdown', (e) => { if (e.target.closest('.tface')) return; held = false; hold = setTimeout(() => { held = true; box.classList.add('setface'); }, 2000); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => box.addEventListener(ev, () => clearTimeout(hold)));
+  const pick = box.querySelector('.tface input');
+  pick.addEventListener('change', () => {
+    const f = pick.files[0]; if (!f) return;
+    putImg(FACE_ID, f); showFace(f); box.classList.remove('setface'); toast('얼굴을 바꿨어요');
+  });
+  box.addEventListener('click', (e) => {
+    if (e.target.closest('.tface')) return;
+    if (held) { held = false; return; }
+    box.classList.add('bye'); setTimeout(() => box.remove(), 350);
+  });
   $('#app').appendChild(box);
   if (navigator.vibrate) navigator.vibrate(30);
 }
@@ -1199,7 +1217,7 @@ function tripForm(isNew) {
         <label class="field">출발일<input type="date" name="start" value="${t.start}" required></label>
         <label class="field">마지막 날<input type="date" name="end" value="${t.end}" required></label>
       </div>
-      <label class="field">동행자 · 쉼표로 구분<input name="members" value="${esc((t.members || []).join(', '))}" placeholder="예: 지훈, 다영"></label>
+      <label class="field">동행자 · 쉼표로 구분<input name="members" value="${esc((t.members || []).join(', '))}" placeholder="예: 나, 동행"></label>
       <label class="field">전체 예산 (원)<input type="number" name="budget" inputmode="numeric" value="${esc(t.budget)}" placeholder="예: 1500000"></label>
       <button class="btn" type="submit">${isNew ? '만들기' : '저장'}</button>
       ${isNew ? '' : `<button class="btn ghost" type="button" data-act="trips">다른 여행 보기 · 추가</button>
@@ -1571,7 +1589,138 @@ function ticketDetail(t) {
 }
 
 /* ========= 체크리스트 ========= */
+/* ========= 체크리스트: 펼쳐진 캐리어에 짐 넣기 ========= */
+// 이모지가 없는 여행 준비물은 직접 그린 아이콘 (40×40)
+const PACK_ART = {
+  hairdryer: { kw: ['드라이기', '드라이어', '헤어드라이'], base: 0, svg: '<circle cx="15" cy="15" r="10" fill="#F28CB1"/><circle cx="15" cy="15" r="5" fill="#FBD3E2"/><path d="M24 11h11a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H24z" fill="#E86A98"/><path d="M13 24h6l-1 12a2 2 0 0 1-2 2h0a2 2 0 0 1-2-2z" fill="#E86A98"/><path d="M15 38c0 2-3 2-5 0" stroke="#888" stroke-width="1.5" fill="none"/>' },
+  straightener: { kw: ['고데기', '고대기', '매직기', '판고데기', '봉고데기'], base: 0, svg: '<path d="M8 4l5 1 6 28-4 1z" fill="#5C5470"/><path d="M19 4l-5 1 3 28 4 1z" fill="#7A7290"/><path d="M10 8l3 18" stroke="#F4A261" stroke-width="2.5" stroke-linecap="round"/><path d="M17 8l1 18" stroke="#F4A261" stroke-width="2.5" stroke-linecap="round"/><path d="M17 34c4 3 10 2 14-4" stroke="#999" stroke-width="1.6" fill="none"/>' },
+  neckpillow: { kw: ['목베개', '목쿠션', '넥필로우'], base: 0, svg: '<path d="M20 4C9 4 4 12 4 20s4 15 11 15c3 0 5-2 5-5 0-2-2-4-4-4-2-1-3-3-3-6 0-5 3-8 7-8s7 3 7 8c0 3-1 5-3 6-2 0-4 2-4 4 0 3 2 5 5 5 7 0 11-7 11-15S31 4 20 4z" fill="#8EC5FC"/><path d="M12 9c3-2 13-2 16 0" stroke="#fff" stroke-width="1.5" fill="none" opacity=".7"/>' },
+  powerstrip: { kw: ['멀티탭', '멀티 탭', '콘센트'], base: 0, svg: '<rect x="4" y="12" width="30" height="14" rx="4" fill="#F1F1F1" stroke="#BDBDBD" stroke-width="1.5"/><g fill="#555"><circle cx="11" cy="19" r="1.4"/><circle cx="15" cy="19" r="1.4"/><circle cx="23" cy="19" r="1.4"/><circle cx="27" cy="19" r="1.4"/></g><rect x="31" y="16" width="4" height="6" rx="1.5" fill="#E76F51"/><path d="M4 19c-3 0-3 9 3 12s10 2 12 6" stroke="#888" stroke-width="1.6" fill="none"/>' },
+  selfiestick: { kw: ['셀카봉', '삼각대', '셀피'], base: 0, svg: '<rect x="13" y="3" width="14" height="22" rx="3" fill="#2B2D42"/><rect x="15" y="5" width="10" height="17" rx="1.5" fill="#8EC5FC"/><rect x="18.5" y="25" width="3" height="11" rx="1.5" fill="#8D99AE"/><rect x="17" y="34" width="6" height="4" rx="2" fill="#2B2D42"/>' },
+  drybag: { kw: ['방수팩', '방수가방', '드라이백', '방수 팩'], base: 0, svg: '<path d="M10 9h20l-1 25a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3z" fill="#4CC9F0" opacity=".85"/><rect x="9" y="4" width="22" height="6" rx="2" fill="#0077B6"/><path d="M14 18h12M14 23h12" stroke="#fff" stroke-width="1.6" opacity=".7"/><path d="M31 7c5 3 5 12 0 16" stroke="#0077B6" stroke-width="2" fill="none"/>' },
+  zipbag: { kw: ['지퍼백', '지퍼 백', '비닐백', '위생백'], base: 0, svg: '<rect x="6" y="8" width="28" height="27" rx="3" fill="#CDEFFF" stroke="#7EC8E3" stroke-width="1.5"/><rect x="6" y="8" width="28" height="5" rx="2" fill="#2E86DE"/><rect x="8" y="9.5" width="24" height="1.6" rx=".8" fill="#fff" opacity=".8"/><path d="M11 20l6 0M11 25l10 0" stroke="#7EC8E3" stroke-width="1.6" stroke-linecap="round"/>' },
+  aquashoes: { kw: ['아쿠아슈즈', '아쿠아 슈즈', '워터슈즈', '물신발'], base: 1, svg: '<path d="M4 26c0-5 3-9 7-10l6-1c3 0 5 2 8 3l8 2c3 1 4 3 4 6v2H4z" fill="#2EC4B6"/><path d="M4 28h33v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="#1B4965"/><path d="M12 18l2 6M17 17l2 7M22 18l1.5 6" stroke="#CBF3F0" stroke-width="1.6" stroke-linecap="round"/>' },
+  rashguard: { kw: ['래쉬가드', '래시가드', '래쉬 가드', '수영 상의'], base: 1, svg: '<path d="M14 5l-9 5 3 9 4-2v18h16V17l4 2 3-9-9-5c-1 3-3 4-6 4s-5-1-6-4z" fill="#3A86FF"/><path d="M12 22h16" stroke="#FFBE0B" stroke-width="3"/><path d="M5 10l3 9" stroke="#FFBE0B" stroke-width="2"/><path d="M35 10l-3 9" stroke="#FFBE0B" stroke-width="2"/>' }
+};
+// 자주 쓰는 여행 준비물은 직접 고른 이모지 (공식 키워드가 애매한 것 바로잡기). [단어들, 이모지, 본체(옷·신발)면 1]
+const PACK_DICT = [
+  [['여권'], '🛂', 0], [['항공권', '비행기표', '보딩'], '🎫', 0], [['신용카드', '카드', '트래블'], '💳', 0], [['지갑'], '👛', 0], [['현금', '환전', '페소', '달러', '돈'], '💵', 0],
+  [['보조배터리', '배터리'], '🔋', 0], [['충전기', '케이블', '어댑터', '변환', '플러그'], '🔌', 0], [['휴대폰', '핸드폰', '폰'], '📱', 0], [['이어폰', '에어팟', '헤드폰'], '🎧', 0],
+  [['카메라', '고프로', '액션캠'], '📷', 0], [['노트북'], '💻', 0], [['시계'], '⌚', 0], [['선크림', '썬크림', '자외선', '로션', '샴푸', '바디'], '🧴', 0], [['선글라스'], '🕶️', 0],
+  [['안경', '렌즈'], '👓', 0], [['칫솔', '치약'], '🪥', 0], [['세면', '비누', '폼클'], '🧼', 0], [['화장품', '파우치', '메이크업', '립'], '💄', 0], [['빗', '헤어'], '🪮', 0],
+  [['상비약', '복용약', '약', '진통제', '멀미'], '💊', 0], [['밴드', '반창고'], '🩹', 0], [['모기', '벌레'], '🦟', 0], [['우산', '우비'], '☂️', 0], [['물안경', '스노클', '고글'], '🥽', 0],
+  [['책', '여행책'], '📖', 0], [['손선풍기', '선풍기', '부채'], '🪭', 0], [['수건', '타월'], '🧺', 0], [['서류', '입국', '바우처', '예약'], '📄', 0], [['가방', '배낭', '백팩'], '🎒', 0],
+  [['수영복', '비키니'], '👙', 1], [['원피스', '드레스'], '👗', 1], [['반바지'], '🩳', 1], [['바지', '청바지'], '👖', 1], [['속옷', '팬티'], '🩲', 1], [['양말'], '🧦', 1],
+  [['잠옷', '파자마'], '👚', 1], [['옷', '티셔츠', '여벌', '상의', '셔츠'], '👕', 1], [['겉옷', '자켓', '재킷', '가디건', '바람막이'], '🧥', 1], [['모자'], '👒', 1],
+[['물티슈', '휴지', '티슈'], '🧻', 0], [['손톱깎이', '가위'], '✂️', 0], [['면도기', '면도'], '🪒', 0], [['물병', '텀블러', '보틀'], '🥤', 0], [['간식', '과자', '컵라면', '라면'], '🍫', 0], [['마스크'], '😷', 0], [['볼펜', '펜'], '🖊️', 0], [['빨래', '세탁'], '🧺', 0],
+  [['크록스'], '🩴', 1], [['슬리퍼', '쪼리', '조리'], '🩴', 1], [['샌들'], '👡', 1], [['운동화', '신발'], '👟', 1]
+];
+const normName = (t) => String(t || '').toLowerCase().replace(/\s+/g, '');
+// 아이콘 정하기: 직접 고른 것 → 직접 그린 아이콘 → 준비물 사전 → 이모지 키워드 검색 → 🧳
+function packIcon(x) {
+  const t = normName(x.title);
+  const pick = x.icon || (S.iconMemo || {})[t];
+  if (pick) return { icon: pick, base: pick.startsWith('art:') ? PACK_ART[pick.slice(4)].base : packBaseOf(pick) };
+  let best = null, at = 1e9;
+  const take = (i, icon, base) => { if (i >= 0 && i < at) { at = i; best = { icon, base }; } };
+  Object.entries(PACK_ART).forEach(([k, a]) => a.kw.forEach((w) => take(t.indexOf(normName(w)), 'art:' + k, a.base)));
+  PACK_DICT.forEach(([ws, e, base]) => ws.forEach((w) => take(t.indexOf(w), e, base)));
+  if (best) return best;
+  const toks = String(x.title || '').split(/[^0-9a-zA-Z가-힣]+/).filter((w) => w.length >= 2);
+  let score = 0, hit = null;
+  if (typeof EMOJI_KO !== 'undefined') EMOJI_KO.forEach(([e, kw, cloth]) => {
+    const words = kw.split(' ');
+    let sc = 0;
+    toks.forEach((tk) => { if (words.includes(tk)) sc += 3; else if (words.some((w) => w.length >= 2 && (w.includes(tk) || tk.includes(w)))) sc += 1; });
+    if (sc > score) { score = sc; hit = { icon: e, base: cloth }; }
+  });
+  return hit || { icon: '🧳', base: 0 };
+}
+function packBaseOf(e) {
+  const d = PACK_DICT.find((r) => r[1] === e); if (d) return d[2];
+  const k = typeof EMOJI_KO !== 'undefined' && EMOJI_KO.find((r) => r[0] === e);
+  return k ? k[2] : 0;
+}
+function iconHtml(icon, size) {
+  if (icon.startsWith('art:')) { const a = PACK_ART[icon.slice(4)]; return `<svg class="pic" viewBox="0 0 40 40" width="${size}" height="${size}" aria-hidden="true">${a ? a.svg : ''}</svg>`; }
+  return `<span class="pic" style="font-size:${Math.round(size * 0.86)}px" aria-hidden="true">${icon}</span>`;
+}
+let lastPacked = null, bagPeek = false, holdFired = false;
+// 짐 칸을 꾹 누르면(0.55초) 아이콘 바꾸기 · 고치기 메뉴
+(() => {
+  let t = null;
+  document.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('[data-hold]'); if (!b) return;
+    holdFired = false; clearTimeout(t);
+    t = setTimeout(() => { holdFired = true; if (navigator.vibrate) try { navigator.vibrate(20); } catch (er) {} itemMenu(S.checklist.find((y) => y.id === b.dataset.id)); }, 550);
+  });
+  ['pointerup', 'pointercancel', 'pointermove'].forEach((ev) => document.addEventListener(ev, (e) => { if (ev === 'pointermove' && Math.abs(e.movementX) + Math.abs(e.movementY) < 4) return; clearTimeout(t); }));
+  document.addEventListener('contextmenu', (e) => { if (e.target.closest('[data-hold]')) e.preventDefault(); });
+})();
 function viewCheck() {
+  if ((S.ui.checkMode || 'bag') === 'list') return viewCheckList();
+  const f = S.ui.checkFilter || 'all';
+  const mine = S.checklist.filter((x) => f === 'all' || x.owner === f);
+  const todo = mine.filter((x) => x.cat !== 'pack'), pack = mine.filter((x) => x.cat === 'pack');
+  const packed = pack.filter((x) => x.done), left = pack.filter((x) => !x.done);
+  const info = (x) => Object.assign({ x }, packIcon(x));
+  const chips = (list) => list.map((o) => `<button class="pchip ${o.x.id === lastPacked ? 'pop' : ''}" data-act="unpack" data-id="${o.x.id}" aria-label="${esc(o.x.title)} 꺼내기">${iconHtml(o.icon, 18)}<span>${esc(o.x.title)}</span></button>`).join('');
+  const P = packed.map(info), lid = P.filter((o) => !o.base), base = P.filter((o) => o.base);
+  const closed = pack.length > 0 && !left.length && !bagPeek;
+  const todoDone = todo.filter((x) => x.done).length;
+  lastPacked = null;
+  return `<div class="stack" style="gap:14px">
+    ${subHead('체크리스트', '짐을 누르면 캐리어에 쏙. 다시 누르면 꺼내져요.', addBtn('addCheck', '짐 추가'))}
+    <div class="between" style="gap:8px">
+      <div class="chips" style="flex:1;min-width:0">${[['all', '전체'], ['공통', '공통'], ...members().map((m) => [m, m])].map(([k, v]) => `<button class="chip ${f === k ? 'on' : ''}" data-act="cfilter" data-f="${esc(k)}">${esc(v)}</button>`).join('')}</div>
+      <button class="chip" data-act="checkMode" style="flex-shrink:0">${svg('list', 14)} 목록</button>
+    </div>
+    ${!S.checklist.length ? `<button class="tkempty" data-act="checkTemplate">기본 준비물로 시작하기</button>` : ''}
+    ${pack.length ? `<div class="between"><b style="font-size:15px">내 캐리어</b><span class="small muted">${packed.length} / ${pack.length} 챙김</span></div>
+    <div class="suit ${closed ? 'closed' : ''}" ${closed ? 'data-act="bagPeek"' : ''}>
+      <i class="suit-handle"></i>
+      <div class="suit-case">
+        <div class="suit-half suit-lid"><i class="suit-zip"></i><span class="suit-lbl">뚜껑 · 지퍼 주머니</span><div class="suit-pocket">${chips(lid)}</div></div>
+        <div class="suit-hinge"><i></i><i></i><i></i></div>
+        <div class="suit-half suit-base"><i class="suit-zip"></i><span class="suit-lbl">본체 · 옷이랑 신발</span><div class="suit-in">${chips(base)}<i class="suit-strap" style="top:34%"></i><i class="suit-strap" style="top:70%"></i></div>
+          <i class="suit-wheel" style="left:14px"></i><i class="suit-wheel" style="right:14px"></i></div>
+      </div>
+      ${closed ? `<div class="suit-done"><b>다 쌌어요</b><span>눌러서 다시 열기</span></div>` : ''}
+    </div>
+    <span class="hbar" style="background:#E3E6E3;margin:0"><i style="width:${Math.round(packed.length / pack.length * 100)}%;background:#2DAA8A"></i></span>` : ''}
+    ${left.length ? `<div class="stack" style="gap:8px"><span class="small muted" style="font-weight:700">아직 안 챙긴 짐 · ${left.length}</span>
+      <div class="ptiles">${left.map(info).map((o) => `<button class="ptile" data-act="pack" data-id="${o.x.id}" data-hold="itemMenu">${iconHtml(o.icon, 30)}<span>${esc(o.x.title)}</span>${f === 'all' && o.x.owner !== '공통' ? `<em>${esc(o.x.owner)}</em>` : ''}</button>`).join('')}
+      <button class="ptile padd" data-act="addCheck" data-cat="pack">${svg('plus', 26, '#17806D', 2.2)}<span>짐 추가</span></button></div>
+      <span class="small muted">꾹 누르면 아이콘 바꾸기 · 고치기</span></div>` : ''}
+    ${todo.length ? `<div class="stack" style="gap:6px"><div class="between"><span class="small muted" style="font-weight:700">출발 전 할 일 · ${todoDone} / ${todo.length}</span></div>
+      <div class="card" style="padding:0 6px 0 4px">${todo.map((x) => `<div class="list-row" style="gap:4px;padding:4px 0">
+        <button class="icon" data-act="toggleCheck" data-id="${x.id}" aria-label="${esc(x.title)} 체크" style="width:40px;height:40px"><span class="check ${x.done ? 'on' : ''}" style="border-radius:7px">${x.done ? svg('check', 14, '#fff', 3) : ''}</span></button>
+        <span style="flex:1;font-size:15px" class="${x.done ? 'done-text' : ''}">${esc(x.title)}</span><span class="ctag">${CHECK_CATS[x.cat] || ''}</span>
+        <button class="icon" data-act="editCheck" data-id="${x.id}" aria-label="수정" style="width:36px;height:36px">${svg('edit', 16, '#5B6B6E')}</button></div>`).join('')}</div></div>` : ''}
+  </div>`;
+}
+function itemMenu(x) {
+  if (!x) return;
+  const cur = packIcon(x);
+  openSheet(`<div class="row" style="gap:12px;margin-bottom:14px">${iconHtml(cur.icon, 40)}<h2 style="font-size:20px;flex:1">${esc(x.title)}</h2></div>
+    <div class="stack" style="gap:8px">
+      <button class="btn ghost" data-act="iconPick" data-id="${x.id}" style="height:46px">아이콘 바꾸기</button>
+      <button class="btn ghost" data-act="editCheck" data-id="${x.id}" style="height:46px">이름 · 담당 고치기</button>
+      <button class="btn danger" data-act="delCheck" data-id="${x.id}" style="height:46px">빼기</button>
+    </div>`);
+}
+function iconPicker(x, q) {
+  const all = [...Object.keys(PACK_ART).map((k) => ['art:' + k, PACK_ART[k].kw.join(' ')]), ...PACK_DICT.map(([ws, e]) => [e, ws.join(' ')]), ...(typeof EMOJI_KO !== 'undefined' ? EMOJI_KO : [])];
+  const seen = new Set(), qq = (q || '').trim();
+  const list = all.filter(([e, kw]) => !seen.has(e) && seen.add(e) && (!qq || kw.includes(qq))).slice(0, qq ? 120 : 160);
+  const html = list.map(([e]) => `<button class="ipick" data-act="iconSet" data-id="${x.id}" data-icon="${esc(e)}">${iconHtml(e, 30)}</button>`).join('') || '<span class="small muted" style="grid-column:1/-1;padding:12px 0">못 찾았어요. 다른 말로 찾아보세요</span>';
+  if ($('#ipGrid')) { $('#ipGrid').innerHTML = html; return; }
+  openSheet(`<h2 style="margin-bottom:10px">${esc(x.title)} 아이콘</h2>
+    <label class="msearch2" style="margin-bottom:10px">${svg('search', 18, '#5B6B6E')}<input id="ipSearch" data-id="${x.id}" type="search" placeholder="예: 모자, 신발, 약" autocomplete="off"></label>
+    <div class="ipgrid" id="ipGrid">${html}</div>`);
+}
+
+function viewCheckList() {
   const f = S.ui.checkFilter || 'all';
   const all = S.checklist, done = all.filter((x) => x.done).length;
   const list = all.filter((x) => f === 'all' || x.owner === f);
@@ -1582,7 +1731,7 @@ function viewCheck() {
       <div class="between"><b>준비 완료 <span class="num">${done} / ${all.length}</span></b><button class="chip" data-act="checkTemplate" style="height:34px">기본 준비물 담기 ＋</button></div>
       <span class="hbar" style="background:#E3E6E3;margin:0"><i style="width:${all.length ? Math.round(done / all.length * 100) : 0}%;background:#2DAA8A"></i></span>
     </div>
-    <div class="chips">${[['all', '전체'], ['공통', '공통'], ...members().map((m) => [m, m])].map(([k, v]) => `<button class="chip ${f === k ? 'on' : ''}" data-act="cfilter" data-f="${esc(k)}">${esc(v)}</button>`).join('')}</div>
+    <div class="between" style="gap:8px"><div class="chips" style="flex:1;min-width:0">${[['all', '전체'], ['공통', '공통'], ...members().map((m) => [m, m])].map(([k, v]) => `<button class="chip ${f === k ? 'on' : ''}" data-act="cfilter" data-f="${esc(k)}">${esc(v)}</button>`).join('')}</div><button class="chip" data-act="checkMode" style="flex-shrink:0">🧳 캐리어</button></div>
     ${groups.length ? groups.map(([g, l]) => `<div class="stack" style="gap:6px"><span class="small muted" style="font-weight:700">${g}</span>
       <div class="card" style="padding:0 6px 0 4px">${l.map((x) => `<div class="list-row" style="gap:4px;padding:4px 0">
         <button class="icon" data-act="toggleCheck" data-id="${x.id}" aria-label="${esc(x.title)} 체크" style="width:40px;height:40px"><span class="check ${x.done ? 'on' : ''}" style="border-radius:7px">${x.done ? svg('check', 14, '#fff', 3) : ''}</span></button>
@@ -1593,8 +1742,8 @@ function viewCheck() {
       </div>`).join('')}</div></div>`).join('') : '<div class="empty">"기본 준비물 담기"로 시작해 보세요.</div>'}
   </div>`;
 }
-function checkForm(existing) {
-  const x = existing || { title:'', cat:'pack', owner:'공통' };
+function checkForm(existing, cat) {
+  const x = existing || { title:'', cat: cat || 'pack', owner:'공통' };
   openSheet(`<h2 style="margin-bottom:14px">${existing ? '항목 수정' : '챙길 것 추가'}</h2>
     <form class="stack" style="gap:12px" data-form="check" data-id="${existing ? existing.id : ''}">
       <label class="field">항목 이름<input name="title" required value="${esc(x.title)}" placeholder="예: 방수팩"></label>
@@ -1878,9 +2027,15 @@ document.addEventListener('click', (e) => {
     case 'editPlace': placeForm(placeById(id)); break;
     case 'visitPlace': { const p = placeById(id); p.visited = !p.visited; save(); if ($('#sheet').style.display === 'block') placeSheet(p); render(); break; }
     case 'openFile': (async () => { const blob = await getImgBlob(id); if (!blob) { toast('파일을 찾을 수 없어요'); return; } const a2 = document.createElement('a'); a2.href = URL.createObjectURL(blob); a2.target = '_blank'; a2.rel = 'noopener'; document.body.appendChild(a2); a2.click(); a2.remove(); })(); break;
-    case 'addCheck': checkForm(null); break;
+    case 'addCheck': checkForm(null, b.dataset.cat); break;
+    case 'pack': { const x = S.checklist.find((y) => y.id === id); if (!x) break; if (holdFired) { holdFired = false; break; } x.done = true; lastPacked = id; if (navigator.vibrate) try { navigator.vibrate(12); } catch (e) {} rr(); break; }
+    case 'unpack': { const x = S.checklist.find((y) => y.id === id); if (x) { x.done = false; bagPeek = false; rr(); } break; }
+    case 'bagPeek': bagPeek = true; rr(); break;
+    case 'checkMode': S.ui.checkMode = (S.ui.checkMode || 'bag') === 'bag' ? 'list' : 'bag'; rr(); break;
+    case 'iconPick': iconPicker(S.checklist.find((y) => y.id === id)); break;
+    case 'iconSet': { const x = S.checklist.find((y) => y.id === id); if (!x) break; x.icon = b.dataset.icon; S.iconMemo = S.iconMemo || {}; S.iconMemo[normName(x.title)] = x.icon; closeSheet(); rr(); toast('아이콘을 바꿨어요'); break; }
     case 'editCheck': checkForm(S.checklist.find((x) => x.id === id)); break;
-    case 'delCheck': S.checklist = S.checklist.filter((x) => x.id !== id); rr(); break;
+    case 'delCheck': S.checklist = S.checklist.filter((x) => x.id !== id); closeSheet(); rr(); break;
     case 'toggleCheck': { const x = S.checklist.find((y) => y.id === id); x.done = !x.done; rr(); break; }
     case 'cfilter': S.ui.checkFilter = b.dataset.f; rr(); break;
     case 'checkTemplate': {
@@ -1908,6 +2063,7 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('input', (e) => {
   const el = e.target;
+  if (el.id === 'ipSearch') { const x = S.checklist.find((y) => y.id === el.dataset.id); if (x) iconPicker(x, el.value); return; }
   if (el.id === 'placeListQ') {
     S.ui.placeQ = el.value; const box = $('#placeListBox');
     if (box) { const tmp = document.createElement('div'); tmp.innerHTML = viewPlaces(); box.innerHTML = tmp.querySelector('#placeListBox').innerHTML; hydrateImages(); }
