@@ -728,8 +728,9 @@ function applyAppTheme(m = map) {
 /* ----- 🐢 숨은 거북이: 호핑투어 바다(크로커다일 섬 근처)에서 헤엄침. 누르면 얼굴 거북이가 엉금엉금 ----- */
 // 레드웨일 호핑투어 미팅 장소(아스토리아 리조트 앞 바다)에서 헤엄침. 아스토리아 위치를 알면 거기서 바다 쪽(서쪽)으로 조금
 const turtleAt = () => { const a = placeById('astoria'); return a && a.lat ? [a.lng - 0.0016, a.lat + 0.0002] : [121.9128, 11.9737]; };
-// 얼굴 사진은 리포(공개)에 올리지 않고 각자 폰 안(IndexedDB)에만 저장. 거북이를 2초 길게 누르면 숨은 '얼굴 바꾸기' 버튼이 나옴. 사진이 없으면 그림 얼굴
+// 기본 얼굴은 turtle-face.png. 거북이를 2초 길게 누르면 숨은 '얼굴 바꾸기' 버튼이 나오고, 고른 사진은 그 폰(IndexedDB)에만 저장돼 기본 얼굴 대신 쓰임
 const FACE_ID = 'turtle-face';
+const FACE_SRC = './turtle-face.png';
 const turtleSvg = (head) => `<svg viewBox="-75 -72 185 144" aria-hidden="true">
   <g class="tfl tfl1"><ellipse cx="30" cy="-44" rx="13" ry="22" transform="rotate(-35 30 -44)" fill="#7DBE7A"/></g>
   <g class="tfl tfl2"><ellipse cx="30" cy="44" rx="13" ry="22" transform="rotate(35 30 44)" fill="#7DBE7A"/></g>
@@ -764,7 +765,7 @@ const turtleSide = () => `<svg viewBox="0 -40 340 230" aria-hidden="true">
     <path d="M224 128 C244 126 256 116 264 102" stroke="#7DBE7A" stroke-width="34" stroke-linecap="round" fill="none"/>
     <path d="M238 127 C250 123 258 115 262 108" stroke="#93CC8F" stroke-width="8" stroke-linecap="round" fill="none" opacity=".7"/>
     <g class="tfallback"><circle cx="260" cy="76" r="30" fill="#7DBE7A"/><circle cx="252" cy="68" r="3.6" fill="#1C2B2E"/><circle cx="270" cy="68" r="3.6" fill="#1C2B2E"/><path d="M252 84 q9 7 18 0" stroke="#1C2B2E" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="244" cy="80" r="4" fill="#F5A3A3" opacity=".7"/><circle cx="278" cy="80" r="4" fill="#F5A3A3" opacity=".7"/></g>
-    <image class="tphoto" x="222" y="-6" width="104" height="104"/>
+    <image class="tphoto" x="204" y="-8" width="124" height="124"/>
   </g>
   <path d="M34 140 Q40 44 140 38 Q236 44 246 140 Z" fill="#4F8F55"/>
   <path d="M50 136 Q58 58 140 53 Q222 58 230 136 Z" fill="#6FAF6B"/>
@@ -781,8 +782,7 @@ function turtleShow() {
     <label class="tface">얼굴 바꾸기<input type="file" accept="image/*" hidden></label>`;
   const img = box.querySelector('.tphoto');
   const showFace = (blob) => {
-    if (!blob) { box.classList.remove('hasface'); img.removeAttribute('href'); return; }
-    img.setAttribute('href', URL.createObjectURL(blob)); box.classList.add('hasface');
+    img.setAttribute('href', blob ? URL.createObjectURL(blob) : FACE_SRC); box.classList.add('hasface');
   };
   getImgBlob(FACE_ID).then(showFace);
   // 2초 길게 누르면 숨은 버튼이 나타남 (사진 고르기는 버튼을 직접 눌러야 열려서 따로 둠)
